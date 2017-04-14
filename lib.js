@@ -1,7 +1,9 @@
 var oldData = [];
 
-function config(quadrant, barWidth){
-  var barHeight,
+function config(quadrant, size, type, data){
+  var
+    barHeight,
+    barWidth,
     textY,
     xAxis,
     yAxis,
@@ -13,97 +15,141 @@ function config(quadrant, barWidth){
     gHidePositionEnter,
     gHidePositionExit,
     x,
-    y;
-  var oldYScale = d3.scaleLinear().domain([0, d3.max(oldData, function(d){
-    return d.value;
-  })]);
+    y,
+    axisTextAngle,
+    xAxisTextAnchor,
+    yAxisTextDy,
+    oldYScale;
 
-  if(quadrant == 1 || quadrant == 2 ){
-    barHeight = function(d){
-      return size.height - size.padding - yScale(d.value);
-    };
-    textY = function (d) {
-      return 13;
-    };
-    xAxisTranslate = function(){
-      return size.height - size.padding + 3;
-    };
+  barWidth = ((size.width - size.padding *2)/(data.length)) - size.barPadding;
+
+  if(type == "horizontal"){
+    xScale.domain([d3.max(data, d => d.time), d3.min(data, d => d.time)]);
+  }
+  else{
+    xScale.domain([d3.min(data, d => d.time), d3.max(data, d => d.time)]);
+  }
+  yScale.domain([0, d3.max(data, d => d.value)]);
+
+  oldYScale = d3.scaleLinear().domain([0, d3.max(oldData, d => d.value)]);
+
+  if(quadrant == 1){
+    if(type == "horizontal"){
+      axisTextAngle = -90;
+      xAxisTextAnchor = "end";
+      yAxis = d3.axisRight();
+      yAxisTranslate = size.width - size.padding + 3 + barWidth/2;
+      gHidePositionEnter = d => "translate("+ -size.padding + ", " + yScale(d.value) + ")";
+      gHidePositionExit = d => "translate("+ -size.padding + ", " + oldYScale(d.value) + ")";
+      yAxisTextDy = "1.5em";
+    }
+    else{
+      axisTextAngle = 0;
+      xAxisTextAnchor = "middle";
+      yAxis = d3.axisLeft();
+      yAxisTranslate = size.padding - 2  - barWidth/2;
+      gHidePositionEnter = d => "translate("+ (size.width + size.padding) + ", " + yScale(d.value) + ")";
+      gHidePositionExit = d => "translate("+ (size.width + size.padding) + ", " + oldYScale(d.value) + ")";
+      yAxisTextDy = "0.4em";
+    }
+    barHeight = d => size.height - size.padding - yScale(d.value);
+    textY = () => 13;
+    xAxisTranslate = size.height - size.padding + 3;
     xAxis = d3.axisBottom();
     oldYScale.range([size.height - size.padding,  size.padding]);
     yScale.range([size.height - size.padding,  size.padding]);
-    y = function(d){
-      return yScale(d.value);
-    };
+    y = d => yScale(d.value);
+    x = d => xScale(d.time) - barWidth/2;
+    xScale.range([size.padding, size.width - size.padding]);
   }
-  else{
-    barHeight = function(d){
-      return yScale(d.value) - size.padding;
-    };
-    textY = function (d) {
-      return yScale(d.value) - size.padding - 13 ;
-    };
-    xAxisTranslate = function(){
-      return size.padding - 3;
-    };
+
+  if(quadrant == 2){
+    if(type == "horizontal"){
+      axisTextAngle = 90;
+      xAxisTextAnchor = "start";
+      yAxis = d3.axisLeft();
+      yAxisTranslate = size.padding - 3 - barWidth/2;
+      gHidePositionExit = d => "translate("+ (size.width + size.padding) + ", " + oldYScale(d.value) + ")";
+      gHidePositionEnter = d => "translate("+ (size.width + size.padding) + ", " + yScale(d.value) + ")";
+      yAxisTextDy = "1.5em";
+    }
+    else{
+      axisTextAngle = 0;
+      xAxisTextAnchor = "middle";
+      yAxis = d3.axisRight();
+      yAxisTranslate = size.width - size.padding + 1 + barWidth/2;
+      gHidePositionExit = d => "translate("+ -size.padding + ", " + oldYScale(d.value) + ")";
+      gHidePositionEnter = d => "translate("+ -size.padding + ", " + yScale(d.value) + ")";
+      yAxisTextDy = "0.4em";
+    }
+    barHeight = d => size.height - size.padding - yScale(d.value);
+    textY = () => 13;
+    xAxisTranslate = size.height - size.padding + 3;
+    xAxis = d3.axisBottom();
+    oldYScale.range([size.height - size.padding,  size.padding]);
+    yScale.range([size.height - size.padding,  size.padding]);
+    y = d => yScale(d.value);
+    xScale.range([size.width - size.padding, size.padding]);
+    x = d => xScale(d.time) - barWidth + barWidth/2;
+  }
+
+  if(quadrant == 3){
+    if(type == "horizontal"){
+      axisTextAngle = -90;
+      xAxisTextAnchor = "start";
+      yAxis = d3.axisLeft();
+      yAxisTranslate = size.padding - barWidth/2 - 3;
+      gHidePositionEnter = gHidePositionExit = d => "translate("+ (size.width + size.padding) + ", " + size.padding + ")";
+      yAxisTextDy = "-1em";
+    }
+    else{
+      axisTextAngle = 0;
+      xAxisTextAnchor = "middle";
+      yAxis = d3.axisRight();
+      yAxisTranslate = size.width - size.padding + 1 + barWidth/2;
+      gHidePositionEnter = gHidePositionExit = d => "translate("+ -size.padding + ", " + size.padding + ")";
+      yAxisTextDy = "0.4em";
+    }
+    barHeight = d => yScale(d.value) - size.padding;
+    textY = d => yScale(d.value) - size.padding - 13;
+    xAxisTranslate = size.padding - 3;
     xAxis = d3.axisTop();
     oldYScale.range([size.padding, size.height - size.padding]);
     yScale.range([size.padding, size.height - size.padding]);
-    y = function(d){
-      return size.padding;
-    };
-  }
-
-  if(quadrant == 1 || quadrant == 3){
-    yAxisTranslate = function(){
-      return size.width - size.padding + 1 + barWidth()/2;
-    };
-    yAxis = d3.axisRight();
+    y = d => size.padding;
     xScale.range([size.width - size.padding, size.padding]);
-    x = function(d){
-      return xScale(d.time) - barWidth() + barWidth()/2;
-    };
-  }else{
-    yAxisTranslate = function(){
-      return size.padding - 2  - barWidth()/2;
-    };
-    yAxis = d3.axisLeft();
-    xScale.range([size.padding, size.width - size.padding]);
-    x = function(d){
-      return xScale(d.time) - barWidth()/2;
-    };
-  }
-
-  gTransform = function(d){
-    return "translate(" + x(d) + ", " + y(d) + ")";
-  };
-
-  if(quadrant == 1){
-    gHidePositionExit = function(d, i){
-      return "translate("+ -size.padding + ", " + oldYScale(d.value) + ")"
-    };
-    gHidePositionEnter = function(d, i){
-      return "translate("+ -size.padding + ", " + yScale(d.value) + ")"
-    };
-  }
-  if(quadrant == 2){
-    gHidePositionExit = function(d, i){
-      return "translate("+ (size.width + size.padding) + ", " + oldYScale(d.value) + ")"
-    };
-    gHidePositionEnter = function(d, i){
-      return "translate("+ (size.width + size.padding) + ", " + yScale(d.value) + ")"
-    };
-  }
-  if(quadrant == 3){
-    gHidePositionEnter = gHidePositionExit = function(d, i){
-      return "translate("+ -size.padding + ", " + size.padding + ")"
-    };
+    x = d => xScale(d.time) - barWidth + barWidth/2;
   }
 
   if(quadrant == 4){
-    gHidePositionEnter = gHidePositionExit = function(d, i){
-      return "translate("+ (size.width + size.padding) + ", " + size.padding + ")"
-    };
+    if(type == "horizontal"){
+      axisTextAngle = 90;
+      yAxis = d3.axisRight();
+      yAxisTranslate = size.width - size.padding + 3 + barWidth/2;
+      xAxisTextAnchor = "end";
+      gHidePositionEnter = gHidePositionExit = d => "translate("+ -size.padding + ", " + size.padding + ")";
+      yAxisTextDy = "-1em";
+    }
+    else{
+      axisTextAngle = 0;
+      xAxisTextAnchor = "middle";
+      yAxisTranslate = size.padding - 2  - barWidth/2;
+      yAxis = d3.axisLeft();
+      gHidePositionEnter = gHidePositionExit = d => "translate("+ (size.width + size.padding) + ", " + size.padding + ")";
+      yAxisTextDy = "0.4em";
+    }
+    barHeight = d => yScale(d.value) - size.padding;
+    textY = d => yScale(d.value) - size.padding - 13;
+    xAxisTranslate = size.padding - 3;
+    xAxis = d3.axisTop();
+    oldYScale.range([size.padding, size.height - size.padding]);
+    yScale.range([size.padding, size.height - size.padding]);
+    y = d => size.padding;
+    x = d => xScale(d.time) - barWidth/2;
+    xScale.range([size.padding, size.width - size.padding]);
   }
+
+  gTransform = d => "translate(" + x(d) + ", " + y(d) + ")";
 
   return {
     "barHeight": barHeight,
@@ -117,11 +163,14 @@ function config(quadrant, barWidth){
     "gTransform": gTransform,
     "gHidePositionEnter": gHidePositionEnter,
     "gHidePositionExit": gHidePositionExit,
+    "axisTextAngle": axisTextAngle,
+    "xAxisTextAnchor": xAxisTextAnchor,
+    "yAxisTextDy": yAxisTextDy,
+    "barWidth": barWidth,
   }
 }
 
-function chart(data, elem, size, color, quadrant) {
-
+function prepareData(data){
   var tempData = [];
   _.forEach(data, function (v, key) {
     if (v.value < 0 || v.value === undefined) {
@@ -132,86 +181,116 @@ function chart(data, elem, size, color, quadrant) {
       tempData.push(v);
     }
   });
+  return tempData;
+};
 
-  var barWidth = function(){
-    return ((size.width - size.padding *2)/(tempData.length)) - size.barPadding;
-  }
+function chart(data, elem, size, color, quadrant, type="vertical") {
 
-  var conf = config(quadrant, barWidth);
+  data = prepareData(data);
 
-  var dValue = function(d){
-    return d.value;
-  };
-  var dTime = function(d){
-    return d.time;
-  };
-  var textX = function (d, i) {
-    return conf.xScale(d.time);
-  };
-
-  conf.yScale.domain([0, d3.max(tempData, dValue)]);
-  conf.xScale.domain([d3.min(tempData, dTime), d3.max(tempData, dTime)]);
-
-  conf.xAxis.scale(conf.xScale).ticks(10);
-  conf.yAxis.scale(conf.yScale).ticks(3);
+  var chartConfig = config(quadrant, size, type, data);
 
   var container = d3.select('#' + elem);
   var svg = container.select("svg");
-    if(svg.empty()){
-      svg = container
-        .append("svg")
-        .attr("width", (size.width))
+  var wrapper;
+
+  if(svg.empty()){
+    svg = container
+      .append("svg");
+
+    if(type == "horizontal"){
+      svg.attr("width", size.height)
+        .attr("height", size.width);
+    }
+    else{
+      svg.attr("width", size.width)
         .attr("height", size.height);
-    }else{
-      svg = container.select("svg");
     }
 
+    wrapper = svg.append("g")
+      .attr("class", "wrapper");
+  }
+  else{
+    wrapper = svg.select(".wrapper");
+  }
 
-  if(svg.select("g.x.axis").empty()){
-    svg.append("g")
+  container.attr("class", "block" +" "+ type);
+
+  //rotate wrapper
+  if(type == "horizontal"){
+    if(quadrant == 1 || quadrant == 3){
+      wrapper.attr("transform", "translate(" + size.height + ", 0) rotate(90)");
+    }
+    else{
+      wrapper.attr("transform", "translate(0, " + size.width + ") rotate(-90)");
+    }
+  }
+
+  chartConfig.xAxis.scale(chartConfig.xScale).ticks(10);
+  chartConfig.yAxis.scale(chartConfig.yScale).ticks(3);
+
+  if(wrapper.select("g.x.axis").empty()){
+    wrapper.append("g")
       .attr("class", "x axis")
-      .attr("transform", "translate(0," + conf.xAxisTranslate() +")")
-      .call(conf.xAxis);
+      .attr("transform", "translate(0," + chartConfig.xAxisTranslate +")")
+      .call(chartConfig.xAxis)
+        .selectAll("text")
+        .attr("transform", "rotate(" + chartConfig.axisTextAngle + ")")
+        .style("text-anchor", chartConfig.xAxisTextAnchor);
   }
   else{
-    svg.select(".x.axis")
+    wrapper.select(".x.axis")
       .transition()
       .duration(1000)
-      .call(conf.xAxis);
+      .call(chartConfig.xAxis)
+        .selectAll("text")
+        .attr("transform", "rotate(" + chartConfig.axisTextAngle + ")")
+        .style("text-anchor", chartConfig.xAxisTextAnchor);
+
   }
 
-  if(svg.select("g.y.axis").empty()){
-    svg.append("g")
+  if(wrapper.select("g.y.axis").empty()){
+    wrapper.append("g")
       .attr("class", "y axis")
-      .attr("transform", "translate("+ conf.yAxisTranslate() +", 0)")
-      .call(conf.yAxis);
+      .attr("transform", "translate("+ chartConfig.yAxisTranslate +", 0)")
+      .call(chartConfig.yAxis)
+        .selectAll("text")
+        .attr("transform", "rotate(" + chartConfig.axisTextAngle + ")")
+        .attr("dy", chartConfig.yAxisTextDy)
+        .style("text-anchor", "middle")
+
   }
   else{
-    svg.select(".y.axis")
+    wrapper.select(".y.axis")
       .transition()
       .duration(1000)
-      .call(conf.yAxis);
+      .call(chartConfig.yAxis)
+      .attr("transform", "translate("+ chartConfig.yAxisTranslate +", 0)")
+        .selectAll("text")
+        .attr("transform", "rotate(" + chartConfig.axisTextAngle + ")")
+        .style("text-anchor", "middle")
+        .attr("dy", chartConfig.yAxisTextDy);
   }
 
-  var bar = svg.selectAll("g.bar")
-    .data(tempData);
+  var bar = wrapper.selectAll("g.bar")
+    .data(data);
 
 //Enter
-  if(svg.select("rect").empty()){
+  if(wrapper.select("rect").empty()){
     var g = bar.enter()
       .append("g")
       .attr("class", "bar")
-      .attr("transform", conf.gTransform);
+      .attr("transform", chartConfig.gTransform);
 
     g.append("rect")
-      .attr("width", barWidth)
-      .attr("height", conf.barHeight)
+      .attr("width", chartConfig.barWidth)
+      .attr("height", chartConfig.barHeight)
       .attr("fill", color);
 
     g.append("text")
-      .text(dValue)
-      .attr("x", barWidth()/2)
-      .attr("y", conf.textY)
+      .text(d => d.value)
+      .attr("x", chartConfig.barWidth/2)
+      .attr("y", chartConfig.textY)
       .attr("text-anchor", "middle");
   }
   else{
@@ -219,67 +298,53 @@ function chart(data, elem, size, color, quadrant) {
     var g = bar.enter()
       .append("g")
       .attr("class", "bar")
-      .attr("transform", conf.gHidePositionEnter);
+      .attr("transform", chartConfig.gHidePositionEnter);
 
     g.append("rect")
-      .attr("width", barWidth)
-      .attr("height", conf.barHeight)
+      .attr("width", chartConfig.barWidth)
+      .attr("height", chartConfig.barHeight)
       .attr("fill", color);
 
     g.append("text")
-      .text(dValue)
-      .attr("x", function(){
-        console.log(barWidth()/2);
-        return barWidth()/2;
-      } )
-      .attr("y", conf.textY)
+      .text(d => d.value)
+      .attr("x", chartConfig.barWidth/2)
+      .attr("y", chartConfig.textY)
       .attr("text-anchor", "middle");
 
     g.transition()
-      .delay(function (d, i) {
-        return i / dataset.length * 1000;
-      })
+      .delay( (d, i) => i / dataset.length * 1000 )
       .duration(1000)
-      .attr("transform", conf.gTransform);
-
+      .attr("transform", chartConfig.gTransform);
   }
 
   //Update
   bar.transition()
-    .delay(function (d, i) {
-      return i / dataset.length * 1000;
-    })
+    .delay( (d, i) => i / dataset.length * 1000 )
     .duration(1000)
-    .attr("transform", conf.gTransform);
+    .attr("transform", chartConfig.gTransform);
 
   bar.select("rect")
     .transition()
-    .delay(function (d, i) {
-      return i / dataset.length * 1000;
-    })
+    .delay( (d, i) => i / dataset.length * 1000 )
     .duration(1000)
-    .attr("width", barWidth)
-    .attr("height", conf.barHeight);
+    .attr("width", chartConfig.barWidth)
+    .attr("height", chartConfig.barHeight);
 
   bar.select("text")
     .transition()
-    .delay(function (d, i) {
-      return i / dataset.length * 1000;
-    })
+    .delay( (d, i) => i / dataset.length * 1000)
     .duration(1000)
-    .text(dValue)
-    .attr("y", conf.textY)
-    .attr("x", barWidth()/2);
+    .text(d => d.value)
+    .attr("y", chartConfig.textY)
+    .attr("x", chartConfig.barWidth/2);
 
   //Exit
   bar.exit()
     .transition()
-    .delay(function (d, i) {
-      return i / dataset.length * 500;
-    })
+    .delay( (d, i) => i / dataset.length * 500)
     .duration(1000)
-    .attr("transform", conf.gHidePositionExit)
+    .attr("transform", chartConfig.gHidePositionExit)
     .remove();
 
-  oldData = tempData;
+  oldData = data;
 }
