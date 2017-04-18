@@ -26,8 +26,8 @@ function updateChart(){
   var dataset = getData(maxValue, count);
   chart(dataset, "first", size, "grey", 1);
   chart(dataset, "second", size, "green",  2);
-  chart(dataset, "three", size, "blue", 3, "horizontal");
-  chart(dataset, "four", size, "brown",  4, "horizontal");
+  chart(dataset, "three", size, "blue", 3);
+  chart(dataset, "four", size, "brown",  4);
 }
 
 setInterval(updateChart, 2000);
@@ -40,6 +40,6 @@ chart(dataset, "first", size, "grey", 1);
 
 chart(dataset, "second", size, "green", 2);
 
-chart(dataset, "three", size, "blue", 3, "horizontal");
+chart(dataset, "three", size, "blue", 3);
 
-chart(dataset, "four", size, "brown", 4, "horizontal");
+chart(dataset, "four", size, "brown", 4);

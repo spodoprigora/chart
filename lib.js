@@ -1,25 +1,155 @@
 var oldData = [];
 
+function axisTextConfig(quadrant, type){
+  var axisTextAngle,
+      xAxisTextAnchor,
+      yAxisTextDy;
+
+  if(type == "horizontal"){
+    switch(quadrant){
+      case 1:
+        axisTextAngle = -90;
+        xAxisTextAnchor = "end";
+        yAxisTextDy = "1.5em";
+        break;
+      case 2:
+        axisTextAngle = 90;
+        xAxisTextAnchor = "start";
+        yAxisTextDy = "1.5em";
+        break;
+      case 3:
+        axisTextAngle = -90;
+        xAxisTextAnchor = "start";
+        yAxisTextDy = "-1em";
+        break;
+      case 4:
+        axisTextAngle = 90;
+        xAxisTextAnchor = "end";
+        yAxisTextDy = "-1em";
+        break;
+    };
+  }
+  else{
+    axisTextAngle = 0;
+    xAxisTextAnchor = "middle";
+    yAxisTextDy = "0.4em";
+  }
+
+  return  {
+    "axisTextAngle": axisTextAngle,
+    "xAxisTextAnchor": xAxisTextAnchor,
+    "yAxisTextDy": yAxisTextDy
+  }
+}
+
+function yAxisConfig(quadrant, type, barWidth){
+  var yAxis, yAxisTranslate;
+
+  if(type == "horizontal"){
+    if(quadrant == 1 ||  quadrant == 4){
+      yAxis = d3.axisRight();
+      yAxisTranslate = size.width - size.padding + 3 + barWidth/2;
+    }
+    else{
+      yAxis = d3.axisLeft();
+      yAxisTranslate = size.padding - 3 - barWidth/2;
+    }
+  }
+  else{
+    if(quadrant == 1 || quadrant == 4){
+      yAxis = d3.axisLeft();
+      yAxisTranslate = size.padding - 3  - barWidth/2;
+    }
+    else{
+      yAxis = d3.axisRight();
+      yAxisTranslate = size.width - size.padding + 3 + barWidth/2;
+    }
+  }
+  return {
+    "yAxis": yAxis,
+    "yAxisTranslate": yAxisTranslate
+  }
+}
+
+function gHidePositionConfig(quadrant, type, size, yScale, oldYScale){
+  var gHidePositionEnter, gHidePositionExit;
+  var enterX, enterY, exitX, exitY;
+
+  if(quadrant == 1 || quadrant == 2 ){
+    enterY = d => yScale(d.value);
+    exitY = d => oldYScale(d.value);
+  }
+  else{
+    enterY = exitY = () => size.padding;
+  }
+
+  /*if(type == "horizontal"){
+    if(quadrant == 1 || quadrant == 4){
+      enterX = exitX = -size.padding;
+    }
+    else{
+      enterX = exitX =  size.width + size.padding;
+    }
+  }
+  else{
+    if(quadrant == 1 || quadrant == 4){
+      enterX = exitX = size.width + size.padding;
+    }
+    else{
+      enterX = exitX = -size.padding;
+    }
+  }
+*/
+
+  if( ( (quadrant == 1 || quadrant == 4) && type == "horizontal") || ( (quadrant == 2 || quadrant == 3) && type != "horizontal") ){
+    enterX = exitX = -size.padding;
+  }
+  else{
+    enterX = exitX =  size.width + size.padding;
+  }
+
+  gHidePositionEnter = d => "translate("+ enterX + ", " + enterY(d) + ")";
+  gHidePositionExit = d => "translate("+ exitX + ", " + exitY(d) + ")";
+
+  return {
+    "gHidePositionEnter": gHidePositionEnter,
+    "gHidePositionExit": gHidePositionExit
+  }
+}
+
+function titleTextTransformConfig(quadrant, type, barWidth, textY){
+  var textTransform;
+
+  if(type == "horizontal"){
+    if(quadrant == 1 || quadrant == 3){
+      textTransform = (d) => "rotate(-90 " + ((barWidth/2) + 3) +" " + textY(d) + ")";
+    }
+    else{
+      textTransform = (d) => "rotate(90 " + ((barWidth/2) - 3) +" " + textY(d) + ")";
+    }
+  }
+  else{
+    textTransform = (d) => "rotate(0)";
+  }
+
+  return {
+    "titleTextTransform": textTransform
+  };
+}
+
 function config(quadrant, size, type, data){
   var
     barHeight,
     barWidth,
     textY,
     xAxis,
-    yAxis,
     xAxisTranslate,
-    yAxisTranslate,
     xScale = d3.scaleLinear(),
     yScale = d3.scaleLinear(),
+    oldYScale = d3.scaleLinear(),
     gTransform,
-    gHidePositionEnter,
-    gHidePositionExit,
     x,
-    y,
-    axisTextAngle,
-    xAxisTextAnchor,
-    yAxisTextDy,
-    oldYScale;
+    y;
 
   barWidth = ((size.width - size.padding *2)/(data.length)) - size.barPadding;
 
@@ -29,29 +159,12 @@ function config(quadrant, size, type, data){
   else{
     xScale.domain([d3.min(data, d => d.time), d3.max(data, d => d.time)]);
   }
+
   yScale.domain([0, d3.max(data, d => d.value)]);
 
-  oldYScale = d3.scaleLinear().domain([0, d3.max(oldData, d => d.value)]);
+  oldYScale.domain([0, d3.max(oldData, d => d.value)]);
 
-  if(quadrant == 1){
-    if(type == "horizontal"){
-      axisTextAngle = -90;
-      xAxisTextAnchor = "end";
-      yAxis = d3.axisRight();
-      yAxisTranslate = size.width - size.padding + 3 + barWidth/2;
-      gHidePositionEnter = d => "translate("+ -size.padding + ", " + yScale(d.value) + ")";
-      gHidePositionExit = d => "translate("+ -size.padding + ", " + oldYScale(d.value) + ")";
-      yAxisTextDy = "1.5em";
-    }
-    else{
-      axisTextAngle = 0;
-      xAxisTextAnchor = "middle";
-      yAxis = d3.axisLeft();
-      yAxisTranslate = size.padding - 2  - barWidth/2;
-      gHidePositionEnter = d => "translate("+ (size.width + size.padding) + ", " + yScale(d.value) + ")";
-      gHidePositionExit = d => "translate("+ (size.width + size.padding) + ", " + oldYScale(d.value) + ")";
-      yAxisTextDy = "0.4em";
-    }
+  if(quadrant == 1 || quadrant == 2){
     barHeight = d => size.height - size.padding - yScale(d.value);
     textY = () => 13;
     xAxisTranslate = size.height - size.padding + 3;
@@ -59,57 +172,8 @@ function config(quadrant, size, type, data){
     oldYScale.range([size.height - size.padding,  size.padding]);
     yScale.range([size.height - size.padding,  size.padding]);
     y = d => yScale(d.value);
-    x = d => xScale(d.time) - barWidth/2;
-    xScale.range([size.padding, size.width - size.padding]);
   }
-
-  if(quadrant == 2){
-    if(type == "horizontal"){
-      axisTextAngle = 90;
-      xAxisTextAnchor = "start";
-      yAxis = d3.axisLeft();
-      yAxisTranslate = size.padding - 3 - barWidth/2;
-      gHidePositionExit = d => "translate("+ (size.width + size.padding) + ", " + oldYScale(d.value) + ")";
-      gHidePositionEnter = d => "translate("+ (size.width + size.padding) + ", " + yScale(d.value) + ")";
-      yAxisTextDy = "1.5em";
-    }
-    else{
-      axisTextAngle = 0;
-      xAxisTextAnchor = "middle";
-      yAxis = d3.axisRight();
-      yAxisTranslate = size.width - size.padding + 1 + barWidth/2;
-      gHidePositionExit = d => "translate("+ -size.padding + ", " + oldYScale(d.value) + ")";
-      gHidePositionEnter = d => "translate("+ -size.padding + ", " + yScale(d.value) + ")";
-      yAxisTextDy = "0.4em";
-    }
-    barHeight = d => size.height - size.padding - yScale(d.value);
-    textY = () => 13;
-    xAxisTranslate = size.height - size.padding + 3;
-    xAxis = d3.axisBottom();
-    oldYScale.range([size.height - size.padding,  size.padding]);
-    yScale.range([size.height - size.padding,  size.padding]);
-    y = d => yScale(d.value);
-    xScale.range([size.width - size.padding, size.padding]);
-    x = d => xScale(d.time) - barWidth + barWidth/2;
-  }
-
-  if(quadrant == 3){
-    if(type == "horizontal"){
-      axisTextAngle = -90;
-      xAxisTextAnchor = "start";
-      yAxis = d3.axisLeft();
-      yAxisTranslate = size.padding - barWidth/2 - 3;
-      gHidePositionEnter = gHidePositionExit = d => "translate("+ (size.width + size.padding) + ", " + size.padding + ")";
-      yAxisTextDy = "-1em";
-    }
-    else{
-      axisTextAngle = 0;
-      xAxisTextAnchor = "middle";
-      yAxis = d3.axisRight();
-      yAxisTranslate = size.width - size.padding + 1 + barWidth/2;
-      gHidePositionEnter = gHidePositionExit = d => "translate("+ -size.padding + ", " + size.padding + ")";
-      yAxisTextDy = "0.4em";
-    }
+  else{
     barHeight = d => yScale(d.value) - size.padding;
     textY = d => yScale(d.value) - size.padding - 13;
     xAxisTranslate = size.padding - 3;
@@ -117,37 +181,21 @@ function config(quadrant, size, type, data){
     oldYScale.range([size.padding, size.height - size.padding]);
     yScale.range([size.padding, size.height - size.padding]);
     y = d => size.padding;
-    xScale.range([size.width - size.padding, size.padding]);
-    x = d => xScale(d.time) - barWidth + barWidth/2;
   }
 
-  if(quadrant == 4){
-    if(type == "horizontal"){
-      axisTextAngle = 90;
-      yAxis = d3.axisRight();
-      yAxisTranslate = size.width - size.padding + 3 + barWidth/2;
-      xAxisTextAnchor = "end";
-      gHidePositionEnter = gHidePositionExit = d => "translate("+ -size.padding + ", " + size.padding + ")";
-      yAxisTextDy = "-1em";
-    }
-    else{
-      axisTextAngle = 0;
-      xAxisTextAnchor = "middle";
-      yAxisTranslate = size.padding - 2  - barWidth/2;
-      yAxis = d3.axisLeft();
-      gHidePositionEnter = gHidePositionExit = d => "translate("+ (size.width + size.padding) + ", " + size.padding + ")";
-      yAxisTextDy = "0.4em";
-    }
-    barHeight = d => yScale(d.value) - size.padding;
-    textY = d => yScale(d.value) - size.padding - 13;
-    xAxisTranslate = size.padding - 3;
-    xAxis = d3.axisTop();
-    oldYScale.range([size.padding, size.height - size.padding]);
-    yScale.range([size.padding, size.height - size.padding]);
-    y = d => size.padding;
+  if(quadrant == 1 || quadrant == 4){
     x = d => xScale(d.time) - barWidth/2;
     xScale.range([size.padding, size.width - size.padding]);
   }
+  else{
+    x = d => xScale(d.time) - barWidth + barWidth/2;
+    xScale.range([size.width - size.padding, size.padding]);
+  }
+
+  var {axisTextAngle,xAxisTextAnchor, yAxisTextDy} = axisTextConfig(quadrant, type);
+  var {yAxis, yAxisTranslate} = yAxisConfig(quadrant, type, barWidth);
+  var {gHidePositionEnter, gHidePositionExit} = gHidePositionConfig(quadrant, type, size, yScale, oldYScale);
+  var {titleTextTransform} = titleTextTransformConfig(quadrant, type, barWidth, textY);
 
   gTransform = d => "translate(" + x(d) + ", " + y(d) + ")";
 
@@ -167,6 +215,7 @@ function config(quadrant, size, type, data){
     "xAxisTextAnchor": xAxisTextAnchor,
     "yAxisTextDy": yAxisTextDy,
     "barWidth": barWidth,
+    "titleTextTransform": titleTextTransform
   }
 }
 
@@ -246,7 +295,6 @@ function chart(data, elem, size, color, quadrant, type="vertical") {
         .selectAll("text")
         .attr("transform", "rotate(" + chartConfig.axisTextAngle + ")")
         .style("text-anchor", chartConfig.xAxisTextAnchor);
-
   }
 
   if(wrapper.select("g.y.axis").empty()){
@@ -258,7 +306,6 @@ function chart(data, elem, size, color, quadrant, type="vertical") {
         .attr("transform", "rotate(" + chartConfig.axisTextAngle + ")")
         .attr("dy", chartConfig.yAxisTextDy)
         .style("text-anchor", "middle")
-
   }
   else{
     wrapper.select(".y.axis")
@@ -291,10 +338,10 @@ function chart(data, elem, size, color, quadrant, type="vertical") {
       .text(d => d.value)
       .attr("x", chartConfig.barWidth/2)
       .attr("y", chartConfig.textY)
-      .attr("text-anchor", "middle");
+      .attr("text-anchor", "middle")
+      .attr("transform", chartConfig.titleTextTransform);
   }
   else{
-
     var g = bar.enter()
       .append("g")
       .attr("class", "bar")
@@ -309,7 +356,8 @@ function chart(data, elem, size, color, quadrant, type="vertical") {
       .text(d => d.value)
       .attr("x", chartConfig.barWidth/2)
       .attr("y", chartConfig.textY)
-      .attr("text-anchor", "middle");
+      .attr("text-anchor", "middle")
+      .attr("transform", chartConfig.titleTextTransform);
 
     g.transition()
       .delay( (d, i) => i / dataset.length * 1000 )
@@ -336,7 +384,8 @@ function chart(data, elem, size, color, quadrant, type="vertical") {
     .duration(1000)
     .text(d => d.value)
     .attr("y", chartConfig.textY)
-    .attr("x", chartConfig.barWidth/2);
+    .attr("x", chartConfig.barWidth/2)
+    .attr("transform", chartConfig.titleTextTransform);
 
   //Exit
   bar.exit()
