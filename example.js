@@ -1,4 +1,4 @@
-mport BarView from './BarView'
+import BarView from './BarView'
 import BarConfigModel from './BarConfigModel'
 
 // time series data sample
