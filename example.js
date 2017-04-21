@@ -1,5 +1,5 @@
-import BarView from './BarView'
-import BarConfigModel from './BarConfigModel'
+import BarView from './module/BarView'
+import BarConfigModel from './module/BarConfigModel'
 
 // time series data sample
 const length = 20
