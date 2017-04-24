@@ -1,48 +1,69 @@
-const maxValue = 30;
-const count = { 'countMin': 10, 'countMax': 20 };
+// time series data sample
+const length = 20;
+const data = [];
+_.each(d3.range(length), i => {
+  data.push({
+    group: {
+      x: 1475760930000 + 1000000 * i,
+      a: i,
+      b: _.random(0, length),
+    }
+  })
+});
 
-function getData (maxVal, range) {
-  const data = [];
-  let time = 0;
-  const number = _.random(range.countMin, range.countMax);
-  for (let i = 0; i < number; i++) {
-    const value = _.random(0, maxVal);
-    time += 100;
-    data.push({ time, value });
-  }
-  return data;
-}
-
-const myConfig = {
+const config = {
 
   // id of the chart HTML element
   id: 'chart',
 
-  //config size
-  size: {
-    width: 500,
-    height: 300,
-    barPadding: 1,
-    padding: 45 },
+  // limit max height to provided value
+  height: 400,
 
-  //bar color
-  color: 'orange',
+  // optional margin of the chart
+  margin: {
+    left: 10,
+  },
 
   //quadrant
   quadrant: 1,
 
-  //placement vertical or horizontal; default value  'vertucal'
-  type: 'vertucal'
+  //placement vertical or horizontal; default value  'vertical'
+  //placement: 'horizontal',
+
+  // x axis settings
+  x: {
+    // how to access values from the serie to plot x
+    accessor: 'group.x',
+
+    // use this as axis label
+    label: 'Value',
+
+    // use d3 scales: scaleTime by default
+    scale: 'scaleLinear',
+  },
+
+  y: {
+    accessor: 'group.a',
+    label: 'Label Group.A',
+
+    // color to plot bars with
+    //color: 'steelblue',
+  }
 
 };
 
 
-const configModel = new BarConfigModel(myConfig);
+const configModel = new BarConfigModel(config);
 const chart = new BarView({model: configModel});
 
-
-const data = getData(maxValue, count);
 chart.setData(data);
 
+setTimeout(() => {
+  const slice = _.random(3, length)
+  chart.setData(data.slice(0, slice))
+}, 1000)
 
-setInterval(() => { chart.setData(getData(maxValue, count)) }, 2000);
+setTimeout(() => {
+  config.y.accessor = 'group.b'
+  chart.setConfig(config)
+}, 2000)

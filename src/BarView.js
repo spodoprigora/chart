@@ -11,17 +11,18 @@ let BarView = Backbone.View.extend({
     this.model.setOldData(this.data);
   },
 
-  setConfig(){
-
+  setConfig(config){
+    this.model.setConfig(config);
     this.render();
   },
 
   render: function(){
     let id = this.model.get('id');
-    let size = this.model.get('size');
+    let height = this.model.get('height');
+    let width = this.model.get('width');
     let color = this.model.get('color');
     let quadrant = this.model.get('quadrant');
-    let type = this.model.get('type');
+    let placement = this.model.get('placement');
 
     this.data = this.model.prepareData(this.data);
 
@@ -34,14 +35,14 @@ let BarView = Backbone.View.extend({
 
     let svg = container.select("svg");
     if(svg.empty()){
-      svg = this._createContainer(container, type, size);
+      svg = this._createContainer(container, placement, height, width);
     }
     else{
       this._updateChart(svg, color);
       return false;
     }
 
-    let wrapper = this._createWrapper(svg, type, size, quadrant);
+    let wrapper = this._createWrapper(svg, placement, height, width, quadrant);
 
     this._appendXAxis(wrapper);
     this._appendYAxis(wrapper);
@@ -49,31 +50,32 @@ let BarView = Backbone.View.extend({
     this._appendBar(wrapper, color);
   },
 
-  _createContainer: function(container, type, size){
-    let svg = container.append("svg");
+  _createContainer: function(container, placement, height, width){
+    let svg = container.append("svg")
+      .attr('style', this.model.getMargin());
 
-    if(type === "horizontal"){
-      svg.attr("width", size.height)
-        .attr("height", size.width);
+    if(placement === "horizontal"){
+      svg.attr("width", height)
+        .attr("height", width);
     }
     else{
-      svg.attr("width", size.width)
-        .attr("height", size.height);
+      svg.attr("width", width)
+        .attr("height", height);
     }
     return svg;
   },
 
-  _createWrapper: function(svg, type, size, quadrant){
+  _createWrapper: function(svg, placement, height, width, quadrant){
     let wrapper = svg.append("g")
       .attr("class", "wrapper");
 
     //rotate wrapper
-    if(type === "horizontal"){
+    if(placement === "horizontal"){
       if(quadrant === 1 || quadrant === 3){
-        wrapper.attr("transform", "translate(" + size.height + ", 0) rotate(90)");
+        wrapper.attr("transform", "translate(" + height + ", 0) rotate(90)");
       }
       else{
-        wrapper.attr("transform", "translate(0, " + size.width + ") rotate(-90)");
+        wrapper.attr("transform", "translate(0, " + width + ") rotate(-90)");
       }
     }
     return wrapper;
@@ -101,6 +103,7 @@ let BarView = Backbone.View.extend({
   },
 
   _appendBar: function(wrapper, color){
+    let {group, key} = this.model.getAccessor('y');
     let bar = wrapper.selectAll("g.bar")
       .data(this.data);
 
@@ -116,7 +119,7 @@ let BarView = Backbone.View.extend({
       .attr("fill", color);
 
     g.append("text")
-      .text(d => d.value)
+      .text(d => d[group][key])
       .attr("x", this.model.calculateXTextPosition())
       .attr("y", this.model.calculateYTextPosition())
       .attr("text-anchor", "middle")
@@ -164,7 +167,7 @@ let BarView = Backbone.View.extend({
   },
 
   _enterBar(bar, color){
-
+    let {group, key} = this.model.getAccessor('y');
     let g = bar.enter()
       .append("g")
       .attr("class", "bar")
@@ -176,7 +179,7 @@ let BarView = Backbone.View.extend({
       .attr("fill", color);
 
     g.append("text")
-      .text(d => d.value)
+      .text(d => d[group][key])
       .attr("x", this.model.calculateXTextPosition())
       .attr("y", this.model.calculateYTextPosition())
       .attr("text-anchor", "middle")
@@ -190,6 +193,7 @@ let BarView = Backbone.View.extend({
   },
 
   _updateBar(bar){
+    let {group, key} = this.model.getAccessor('y');
     bar.transition()
       .delay( this.model.calculateDelay(1000) )
       .duration(1000)
@@ -206,7 +210,7 @@ let BarView = Backbone.View.extend({
       .transition()
       .delay( this.model.calculateDelay(1000) )
       .duration(1000)
-      .text(d => d.value)
+      .text(d => d[group][key])
       .attr("y", this.model.calculateYTextPosition())
       .attr("x", this.model.calculateXTextPosition())
       .attr("transform", this.model.calculateTextRotate());

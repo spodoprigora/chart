@@ -1,20 +1,35 @@
 
 let BarConfigModel = Backbone.Model.extend({
-  initialize: function(){
+  initialize: function(config){
     this.data = [];
     this.oldData =[];
+    console.log(config);
   },
 
   defaults: {
     id: 'chart',
-    size: {
-      width: 500,
-      height: 300,
-      barPadding: 1,
-      padding: 45 },
+    height: 300,
+    width: 800,
+    barPadding: 1,
+    padding: 45,
+    margin: {
+      top: 5,
+      left: 5,
+      bottom: 5,
+      right: 5
+    },
+    x: {
+      accessor: 'group.x',
+      label: 'Value',
+      scale: 'scaleTime'
+    },
+    y: {
+      accessor: 'group.a',
+      label: 'Label Group.A',
+    },
     color: 'orange',
     quadrant: 1,
-    type: 'vertical'
+    placement: 'vertical'
   },
 
   setData: function(data){
@@ -25,13 +40,18 @@ let BarConfigModel = Backbone.Model.extend({
     this.oldData = oldData;
   },
 
-  prepareData: function(){
-    let data = this.data;
+  setConfig: function(config){
+    _.forEach(config, (value, key) => this.set(key, value));
+  },
 
+  prepareData: function(data){
     let tempData = [];
     _.forEach(data, function (v, key) {
-      if (v.value < 0 || v.value === undefined) {
-        v.value = 0;
+      if (v.b < 0 || v.b === undefined) {
+        v.b = 0;
+        if(v.a < 0 || v.a === undefined){
+          v.a = 0;
+        }
         tempData.push(v);
       }
       else {
@@ -41,20 +61,31 @@ let BarConfigModel = Backbone.Model.extend({
     return tempData;
   },
 
+  getAccessor: function(x){
+    let accessor = this.get(x).accessor;
+    let arr = accessor.split('.');
+    let group = arr[0];
+    let key = arr[1];
+    return {group, key};
+  },
+
   xScaleConfig: function(){
     let data = this.data;
-    let xScale = d3.scaleLinear();
+    let scale = this.get('x').scale;
+    let xScale = d3[scale]();
 
-    let width = this.get('size').width;
-    let padding = this.get('size').padding;
+    let width = this.get('width');
+    let padding = this.get('padding');
     let quadrant = this.get('quadrant');
-    let type = this.get('type');
+    let placement = this.get('placement');
 
-    if( type === 'horizontal' ){
-      xScale.domain([d3.max(data, d => d.time), d3.min(data, d => d.time)]);
+    let { group, key} = this.getAccessor('x');
+
+    if( placement === 'horizontal' ){
+      xScale.domain([d3.max(data, d => d[group][key]), d3.min(data, d => d[group][key])]);
     }
     else{
-      xScale.domain([d3.min(data, d => d.time), d3.max(data, d => d.time)]);
+      xScale.domain([d3.min(data, d => d[group][key]), d3.max(data, d => d[group][key])]);
     }
 
     if( quadrant === 1 || quadrant === 4 ){
@@ -68,13 +99,14 @@ let BarConfigModel = Backbone.Model.extend({
   },
   yScaleConfig: function(){
     let data = this.data;
+    let { group, key } = this.getAccessor('y');
 
     let yScale = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d.value)]);
+      .domain([0, d3.max(data, d => d[group][key])]);
 
     let quadrant = this.get('quadrant');
-    let height = this.get('size').height;
-    let padding = this.get('size').padding;
+    let height = this.get('height');
+    let padding = this.get('padding');
 
     if(quadrant === 1 || quadrant === 2){
       yScale.range([height - padding,  padding]);
@@ -87,13 +119,14 @@ let BarConfigModel = Backbone.Model.extend({
   },
   oldYScaleConfig: function(){
     let data = this.oldData;
+    let { group, key} = this.getAccessor('x');
 
     let oldYScale = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d.value)]);
+      .domain([0, d3.max(data, d => d[group][key])]);
 
     let quadrant = this.get('quadrant');
-    let height = this.get('size').height;
-    let padding = this.get('size').padding;
+    let height = this.get('height');
+    let padding = this.get('padding');
 
     if(quadrant === 1 || quadrant === 2){
       oldYScale.range([height - padding,  padding]);
@@ -122,9 +155,9 @@ let BarConfigModel = Backbone.Model.extend({
   yAxisConfig: function(){
     let yAxis;
     let quadrant = this.get('quadrant');
-    let type = this.get('type');
+    let placement = this.get('placement');
 
-    if(type === 'horizontal'){
+    if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 4){
         yAxis = d3.axisRight();
       }
@@ -150,9 +183,9 @@ let BarConfigModel = Backbone.Model.extend({
     let axisTextAngle;
 
     let quadrant = this.get('quadrant');
-    let type = this.get('type');
+    let placement = this.get('placement');
 
-    if (type === 'horizontal') {
+    if (placement === 'horizontal') {
       if(quadrant === 1 || quadrant === 3){
         axisTextAngle = -90;
       }
@@ -164,16 +197,15 @@ let BarConfigModel = Backbone.Model.extend({
       axisTextAngle = 0;
     }
 
-
     return axisTextAngle;
   },
   getXAxisTextAnchor: function(){
     let xAxisTextAnchor;
 
     let quadrant = this.get('quadrant');
-    let type = this.get('type');
+    let placement = this.get('placement');
 
-    if (type === 'horizontal') {
+    if (placement === 'horizontal') {
       if(quadrant === 1 || quadrant === 4){
         xAxisTextAnchor = 'end';
       }
@@ -191,9 +223,9 @@ let BarConfigModel = Backbone.Model.extend({
     let yAxisTextDy;
 
     let quadrant = this.get('quadrant');
-    let type = this.get('type');
+    let placement = this.get('placement');
 
-    if (type === 'horizontal') {
+    if (placement === 'horizontal') {
       if(quadrant === 1 || quadrant === 2){
         yAxisTextDy = '1.5em';
       }
@@ -212,8 +244,8 @@ let BarConfigModel = Backbone.Model.extend({
     let xAxisPosition;
 
     let quadrant = this.get('quadrant');
-    let height = this.get('size').height;
-    let padding = this.get('size').padding;
+    let height = this.get('height');
+    let padding = this.get('padding');
 
     if(quadrant === 1 || quadrant === 2){
       xAxisPosition = height - padding + 3;
@@ -228,11 +260,11 @@ let BarConfigModel = Backbone.Model.extend({
     let yAxisPosition;
 
     let quadrant = this.get('quadrant');
-    let width = this.get('size').width;
-    let padding = this.get('size').padding;
-    let type = this.get('type');
+    let width = this.get('width');
+    let padding = this.get('padding');
+    let placement = this.get('placement');
 
-    if(type === 'horizontal'){
+    if(placement === 'horizontal'){
       if(quadrant === 1 ||  quadrant === 4){
         yAxisPosition = width - padding + 3 + this.calculateBarWidth()/2;
       }
@@ -255,9 +287,9 @@ let BarConfigModel = Backbone.Model.extend({
   calculateBarWidth: function(){
     let data = this.data;
 
-    let width = this.get('size').width;
-    let padding = this.get('size').padding;
-    let barPadding = this.get('size').barPadding;
+    let width = this.get('width');
+    let padding = this.get('padding');
+    let barPadding = this.get('barPadding');
 
     return ((width - padding *2)/(data.length)) - barPadding;
   },
@@ -265,14 +297,15 @@ let BarConfigModel = Backbone.Model.extend({
     let barHeight;
 
     let quadrant = this.get('quadrant');
-    let height = this.get('size').height;
-    let padding = this.get('size').padding;
+    let height = this.get('height');
+    let padding = this.get('padding');
+    let { group, key} = this.getAccessor('y');
 
     if(quadrant === 1 || quadrant === 2){
-      barHeight = d => height - padding - this.yScaleConfig()(d.value);
+      barHeight = d => height - padding - this.yScaleConfig()(d[group][key]);
     }
     else{
-      barHeight = d => this.yScaleConfig()(d.value) - padding;
+      barHeight = d => this.yScaleConfig()(d[group][key]) - padding;
     }
     return barHeight;
   },
@@ -281,12 +314,13 @@ let BarConfigModel = Backbone.Model.extend({
     let xPosition;
     let quadrant = this.get('quadrant');
     let barWidth = this.calculateBarWidth();
+    let { group, key} = this.getAccessor('x');
 
     if(quadrant === 1 || quadrant === 4){
-      xPosition = d => this.xScaleConfig()(d.time) - barWidth/2;
+      xPosition = d => this.xScaleConfig()(d[group][key]) - barWidth/2;
     }
     else{
-      xPosition = d => this.xScaleConfig()(d.time) - barWidth + barWidth/2;
+      xPosition = d => this.xScaleConfig()(d[group][key]) - barWidth + barWidth/2;
     }
 
     return xPosition;
@@ -294,10 +328,11 @@ let BarConfigModel = Backbone.Model.extend({
   _calculateYBarPosition: function(){
     let yPosition;
     let quadrant = this.get('quadrant');
-    let padding = this.get('size').padding;
+    let padding = this.get('padding');
+    let { group, key} = this.getAccessor('y');
 
     if(quadrant === 1 || quadrant === 2){
-      yPosition = d => this.yScaleConfig()(d.value);
+      yPosition = d => this.yScaleConfig()(d[group][key]);
     }
     else{
       yPosition = d => padding;
@@ -323,24 +358,25 @@ let BarConfigModel = Backbone.Model.extend({
   calculateYTextPosition: function(){
     let yTextPosition;
     let quadrant = this.get('quadrant');
-    let padding = this.get('size').padding;
+    let padding = this.get('padding');
+    let { group, key} = this.getAccessor('y');
 
     if(quadrant === 1 || quadrant === 2){
       yTextPosition = () => 13;
     }
     else{
-      yTextPosition = d => this.yScaleConfig()(d.value) - padding - 13;
+      yTextPosition = d => this.yScaleConfig()(d[group][key]) - padding - 13;
     }
     return yTextPosition;
   },
   calculateTextRotate: function(){
     let textRotate;
 
-    let type = this.get('type');
+    let placement = this.get('placement');
     let quadrant = this.get('quadrant');
     let barWidth = this.calculateBarWidth();
 
-    if(type === 'horizontal'){
+    if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 3){
         textRotate = d => "rotate(-90 " + ((barWidth/2) + 3) +" " + this.calculateYTextPosition()(d) + ")";
       }
@@ -358,12 +394,12 @@ let BarConfigModel = Backbone.Model.extend({
   _calculateEnterXPosition: function(){
     let xPosition;
 
-    let type = this.get('type');
+    let placement = this.get('placement');
     let quadrant = this.get('quadrant');
-    let padding = this.get('size').padding;
-    let width = this.get('size').width;
+    let padding = this.get('padding');
+    let width = this.get('width');
 
-    if(type === 'horizontal'){
+    if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 4){
         xPosition = -padding;
       }
@@ -386,10 +422,11 @@ let BarConfigModel = Backbone.Model.extend({
     let yPosition;
 
     let quadrant = this.get('quadrant');
-    let padding = this.get('size').padding;
+    let padding = this.get('padding');
+    let { group, key} = this.getAccessor('y');
 
     if(quadrant == 1 || quadrant == 2){
-      yPosition = d => this.yScaleConfig()(d.value);
+      yPosition = d => this.yScaleConfig()(d[group][key]);
     }
     else{
       yPosition = () => padding;
@@ -412,12 +449,12 @@ let BarConfigModel = Backbone.Model.extend({
   _calculateExitXPosition: function(){
     let xPosition;
 
-    let type = this.get('type');
+    let placement = this.get('placement');
     let quadrant = this.get('quadrant');
-    let padding = this.get('size').padding;
-    let width = this.get('size').width;
+    let padding = this.get('padding');
+    let width = this.get('width');
 
-    if(type === 'horizontal'){
+    if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 4){
         xPosition = -padding;
       }
@@ -440,10 +477,11 @@ let BarConfigModel = Backbone.Model.extend({
     let yPosition;
 
     let quadrant = this.get('quadrant');
-    let padding = this.get('size').padding;
+    let padding = this.get('padding');
+    let { group, key} = this.getAccessor('y');
 
     if(quadrant == 1 || quadrant == 2){
-      yPosition = d => this.oldYScaleConfig()(d.value);
+      yPosition = d => this.oldYScaleConfig()(d[group][key]);
     }
     else{
       yPosition = () => padding;
@@ -467,6 +505,17 @@ let BarConfigModel = Backbone.Model.extend({
     delay = (d, i) => i / this.data.length * time;
 
     return delay;
+  },
+
+  getMargin: function(){
+    let margin = this.get('margin');
+    let top = margin.top === undefined ? '0px' : margin.top + "px";
+    let right = margin.right === undefined ? '0px' : margin.right + "px";
+    let bottom = margin.bottom === undefined ? '0px' : margin.bottom + "px";
+    let left = margin.left === undefined ? '0px' : margin.left + "px";
+
+    return "margin: " + top + " " +  right + " " + bottom + " " + left;
+
   }
 
 });
