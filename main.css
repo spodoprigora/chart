@@ -20,3 +20,7 @@ text{
 .row{
     clear: both;
 }
+.label {
+    fill: black;
+    font-size: 14px;
+}

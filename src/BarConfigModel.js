@@ -1,17 +1,16 @@
+class BarConfigModel extends ContrailModel{
 
-let BarConfigModel = Backbone.Model.extend({
-  initialize: function(config){
-    this.data = [];
-    this.oldData =[];
-    console.log(config);
-  },
-
-  defaults: {
+  get defaults(){ return {
     id: 'chart',
     height: 300,
-    width: 800,
+    width: 650,
     barPadding: 1,
-    padding: 45,
+    padding:{
+      top: 20,
+      left:150,
+      bottom: 40,
+      right: 50
+    },
     margin: {
       top: 5,
       left: 5,
@@ -26,25 +25,31 @@ let BarConfigModel = Backbone.Model.extend({
     y: {
       accessor: 'group.a',
       label: 'Label Group.A',
+      color: 'orange',
     },
-    color: 'orange',
+
     quadrant: 1,
     placement: 'vertical'
-  },
+  }}
 
-  setData: function(data){
+  initialize(){
+    this.data = [];
+    this.oldData =[];
+  }
+
+  setData(data){
     this.data = data;
-  },
+  }
 
-  setOldData: function(oldData){
+  setOldData(oldData){
     this.oldData = oldData;
-  },
+  }
 
-  setConfig: function(config){
-    _.forEach(config, (value, key) => this.set(key, value));
-  },
+  setConfig(config){
+    this.set(config);
+  }
 
-  prepareData: function(data){
+  prepareData(data){
     let tempData = [];
     _.forEach(data, function (v, key) {
       if (v.b < 0 || v.b === undefined) {
@@ -59,23 +64,24 @@ let BarConfigModel = Backbone.Model.extend({
       }
     });
     return tempData;
-  },
+  }
 
-  getAccessor: function(x){
-    let accessor = this.get(x).accessor;
-    let arr = accessor.split('.');
-    let group = arr[0];
-    let key = arr[1];
+  getAccessor(axis){
+    let accessor = this.get(axis).accessor;
+    let args = accessor.split('.');
+    let group = args[0];
+    let key = args[1];
     return {group, key};
-  },
+  }
 
-  xScaleConfig: function(){
+  xScaleConfig(){
     let data = this.data;
     let scale = this.get('x').scale;
     let xScale = d3[scale]();
 
     let width = this.get('width');
-    let padding = this.get('padding');
+    let paddingLeft = this.get('padding').left;
+    let paddingRight = this.get('padding').right;
     let quadrant = this.get('quadrant');
     let placement = this.get('placement');
 
@@ -89,35 +95,37 @@ let BarConfigModel = Backbone.Model.extend({
     }
 
     if( quadrant === 1 || quadrant === 4 ){
-      xScale.range([padding, width - padding]);
+      xScale.range([paddingLeft, width - paddingRight]);
     }
     else{
-      xScale.range([width - padding, padding]);
+      xScale.range([width - paddingRight, paddingLeft]);
     }
 
     return xScale;
-  },
-  yScaleConfig: function(){
+  }
+  yScaleConfig(){
     let data = this.data;
     let { group, key } = this.getAccessor('y');
+    let paddingTop = this.get('padding').top;
+    let paddingBottom = this.get('padding').bottom;
 
     let yScale = d3.scaleLinear()
       .domain([0, d3.max(data, d => d[group][key])]);
 
     let quadrant = this.get('quadrant');
     let height = this.get('height');
-    let padding = this.get('padding');
+
 
     if(quadrant === 1 || quadrant === 2){
-      yScale.range([height - padding,  padding]);
+      yScale.range([height - paddingBottom,  paddingTop]);
     }
     else{
-      yScale.range([padding, height - padding]);
+      yScale.range([paddingTop, height - paddingBottom]);
     }
 
     return yScale;
-  },
-  oldYScaleConfig: function(){
+  }
+  oldYScaleConfig(){
     let data = this.oldData;
     let { group, key} = this.getAccessor('x');
 
@@ -126,19 +134,20 @@ let BarConfigModel = Backbone.Model.extend({
 
     let quadrant = this.get('quadrant');
     let height = this.get('height');
-    let padding = this.get('padding');
+    let paddingTop = this.get('padding').top;
+    let paddingBottom = this.get('padding').bottom;
 
     if(quadrant === 1 || quadrant === 2){
-      oldYScale.range([height - padding,  padding]);
+      oldYScale.range([height - paddingBottom,  paddingTop]);
     }
     else{
-      oldYScale.range([padding, height - padding]);
+      oldYScale.range([paddingTop, height - paddingBottom]);
     }
 
     return oldYScale;
-  },
+  }
 
-  xAxisConfig: function(){
+  xAxisConfig(){
     let xAxis;
     let quadrant = this.get('quadrant');
 
@@ -151,8 +160,8 @@ let BarConfigModel = Backbone.Model.extend({
 
     xAxis.scale(this.xScaleConfig()).ticks(10);
     return xAxis;
-  },
-  yAxisConfig: function(){
+  }
+  yAxisConfig(){
     let yAxis;
     let quadrant = this.get('quadrant');
     let placement = this.get('placement');
@@ -177,9 +186,9 @@ let BarConfigModel = Backbone.Model.extend({
     yAxis.scale(this.yScaleConfig()).ticks(3);
 
     return yAxis;
-  },
+  }
 
-  getAxisTextAngle: function(){
+  getAxisTextAngle(){
     let axisTextAngle;
 
     let quadrant = this.get('quadrant');
@@ -198,8 +207,8 @@ let BarConfigModel = Backbone.Model.extend({
     }
 
     return axisTextAngle;
-  },
-  getXAxisTextAnchor: function(){
+  }
+  getXAxisTextAnchor(){
     let xAxisTextAnchor;
 
     let quadrant = this.get('quadrant');
@@ -218,8 +227,8 @@ let BarConfigModel = Backbone.Model.extend({
     }
 
     return xAxisTextAnchor;
-  },
-  getYAxisTextDy: function(){
+  }
+  getYAxisTextDy(){
     let yAxisTextDy;
 
     let quadrant = this.get('quadrant');
@@ -238,79 +247,83 @@ let BarConfigModel = Backbone.Model.extend({
     }
 
     return yAxisTextDy;
-  },
+  }
 
-  calculateXAxisPosition: function(){
+  calculateXAxisPosition(){
     let xAxisPosition;
 
     let quadrant = this.get('quadrant');
     let height = this.get('height');
-    let padding = this.get('padding');
+    let paddingBottom = this.get('padding').bottom;
+    let paddingTop = this.get('padding').top;
 
     if(quadrant === 1 || quadrant === 2){
-      xAxisPosition = height - padding + 3;
+      xAxisPosition = height - paddingBottom + 3;
     }
     else{
-      xAxisPosition = padding - 3;
+      xAxisPosition = paddingTop - 3;
     }
 
     return "translate(0," + xAxisPosition +")";
-  },
-  calculateYAxisPosition: function(){
+  }
+  calculateYAxisPosition(){
     let yAxisPosition;
 
     let quadrant = this.get('quadrant');
     let width = this.get('width');
-    let padding = this.get('padding');
+    let paddingLeft = this.get('padding').left;
+    let paddingRight = this.get('padding').right;
     let placement = this.get('placement');
 
     if(placement === 'horizontal'){
       if(quadrant === 1 ||  quadrant === 4){
-        yAxisPosition = width - padding + 3 + this.calculateBarWidth()/2;
+        yAxisPosition = width - paddingRight + 3 + this.calculateBarWidth()/2;
       }
       else{
-        yAxisPosition = padding - 3 - this.calculateBarWidth()/2;
+        yAxisPosition = paddingLeft - 3 - this.calculateBarWidth()/2;
       }
     }
     else{
       if(quadrant === 1 ||  quadrant === 4){
-        yAxisPosition = padding - 3  - this.calculateBarWidth()/2;
+        yAxisPosition = paddingLeft - 3  - this.calculateBarWidth()/2;
       }
       else{
-        yAxisPosition = width - padding + 3 + this.calculateBarWidth()/2;
+        yAxisPosition = width - paddingRight + 3 + this.calculateBarWidth()/2;
       }
     }
 
     return "translate("+ yAxisPosition +", 0)";
-  },
+  }
 
-  calculateBarWidth: function(){
+  calculateBarWidth(){
     let data = this.data;
 
     let width = this.get('width');
-    let padding = this.get('padding');
+    let paddingLeft = this.get('padding').left;
+    let paddingRight = this.get('padding').right;
     let barPadding = this.get('barPadding');
 
-    return ((width - padding *2)/(data.length)) - barPadding;
-  },
-  calculateBarHeight: function(d) {
+    return ((width - paddingLeft - paddingRight)/(data.length)) - barPadding;
+  }
+  calculateBarHeight() {
     let barHeight;
 
     let quadrant = this.get('quadrant');
     let height = this.get('height');
-    let padding = this.get('padding');
+    let paddingTop = this.get('padding').top;
+    let paddingBottom = this.get('padding').bottom;
     let { group, key} = this.getAccessor('y');
 
     if(quadrant === 1 || quadrant === 2){
-      barHeight = d => height - padding - this.yScaleConfig()(d[group][key]);
+      barHeight = d => height - paddingBottom - this.yScaleConfig()(d[group][key]);
     }
     else{
-      barHeight = d => this.yScaleConfig()(d[group][key]) - padding;
+      barHeight = d => this.yScaleConfig()(d[group][key]) - paddingTop;
     }
     return barHeight;
-  },
+  }
 
-  _calculateXBarPosition: function(){
+  _calculateXBarPosition(){
     let xPosition;
     let quadrant = this.get('quadrant');
     let barWidth = this.calculateBarWidth();
@@ -324,23 +337,23 @@ let BarConfigModel = Backbone.Model.extend({
     }
 
     return xPosition;
-  },
-  _calculateYBarPosition: function(){
+  }
+  _calculateYBarPosition(){
     let yPosition;
     let quadrant = this.get('quadrant');
-    let padding = this.get('padding');
+    let paddingTop = this.get('padding').top;
     let { group, key} = this.getAccessor('y');
 
     if(quadrant === 1 || quadrant === 2){
       yPosition = d => this.yScaleConfig()(d[group][key]);
     }
     else{
-      yPosition = d => padding;
+      yPosition = d => paddingTop;
     }
 
     return yPosition;
-  },
-  calculateBarTransform: function(){
+  }
+  calculateBarTransform(){
     let translate;
 
     translate = d => {
@@ -350,26 +363,26 @@ let BarConfigModel = Backbone.Model.extend({
     };
 
     return translate;
-  },
+  }
 
-  calculateXTextPosition: function(){
+  calculateXTextPosition(){
     return this.calculateBarWidth()/2;
-  },
-  calculateYTextPosition: function(){
+  }
+  calculateYTextPosition(){
     let yTextPosition;
     let quadrant = this.get('quadrant');
-    let padding = this.get('padding');
+    let paddingTop = this.get('padding').top;
     let { group, key} = this.getAccessor('y');
 
     if(quadrant === 1 || quadrant === 2){
       yTextPosition = () => 13;
     }
     else{
-      yTextPosition = d => this.yScaleConfig()(d[group][key]) - padding - 13;
+      yTextPosition = d => this.yScaleConfig()(d[group][key]) - paddingTop - 13;
     }
     return yTextPosition;
-  },
-  calculateTextRotate: function(){
+  }
+  calculateTextRotate(){
     let textRotate;
 
     let placement = this.get('placement');
@@ -389,52 +402,53 @@ let BarConfigModel = Backbone.Model.extend({
     }
 
     return textRotate;
-  },
+  }
 
-  _calculateEnterXPosition: function(){
+  _calculateEnterXPosition(){
     let xPosition;
 
     let placement = this.get('placement');
     let quadrant = this.get('quadrant');
-    let padding = this.get('padding');
+    let paddingLeft = this.get('padding').left;
+    let paddingRight = this.get('padding').right;
     let width = this.get('width');
 
     if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 4){
-        xPosition = -padding;
+        xPosition = -paddingLeft;
       }
       else{
-        xPosition =  width + padding;
+        xPosition =  width + paddingRight;
       }
     }
     else{
       if(quadrant === 1 || quadrant === 4){
-        xPosition = width + padding;
+        xPosition = width + paddingRight;
       }
       else{
-        xPosition = -padding;
+        xPosition = -paddingLeft;
       }
     }
 
     return xPosition;
-  },
-  _calculateEnterYPosition: function(){
+  }
+  _calculateEnterYPosition(){
     let yPosition;
 
     let quadrant = this.get('quadrant');
-    let padding = this.get('padding');
+    let paddingTop = this.get('padding').top;
     let { group, key} = this.getAccessor('y');
 
-    if(quadrant == 1 || quadrant == 2){
+    if(quadrant === 1 || quadrant === 2){
       yPosition = d => this.yScaleConfig()(d[group][key]);
     }
     else{
-      yPosition = () => padding;
+      yPosition = () => paddingTop;
     }
 
     return yPosition;
-  },
-  getEnterPositionTranslate: function(){
+  }
+  getEnterPositionTranslate(){
     let translatePosition;
 
     translatePosition = d => {
@@ -444,52 +458,53 @@ let BarConfigModel = Backbone.Model.extend({
     };
 
     return translatePosition;
-  },
+  }
 
-  _calculateExitXPosition: function(){
+  _calculateExitXPosition(){
     let xPosition;
 
     let placement = this.get('placement');
     let quadrant = this.get('quadrant');
-    let padding = this.get('padding');
+    let paddingLeft = this.get('padding').left;
+    let paddingRight = this.get('padding').right;
     let width = this.get('width');
 
     if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 4){
-        xPosition = -padding;
+        xPosition = -paddingLeft;
       }
       else{
-        xPosition =  width + padding;
+        xPosition =  width + paddingRight;
       }
     }
     else{
       if(quadrant === 1 || quadrant === 4){
-        xPosition = width + padding;
+        xPosition = width + paddingRight;
       }
       else{
-        xPosition = -padding;
+        xPosition = -paddingLeft;
       }
     }
 
     return xPosition;
-  },
-  _calculateExitYPosition: function(){
+  }
+  _calculateExitYPosition(){
     let yPosition;
 
     let quadrant = this.get('quadrant');
-    let padding = this.get('padding');
+    let paddingTop = this.get('padding').top;
     let { group, key} = this.getAccessor('y');
 
-    if(quadrant == 1 || quadrant == 2){
+    if(quadrant === 1 || quadrant === 2){
       yPosition = d => this.oldYScaleConfig()(d[group][key]);
     }
     else{
-      yPosition = () => padding;
+      yPosition = () => paddingTop;
     }
 
     return yPosition;
-  },
-  getExitPositionTranslate: function(){
+  }
+  getExitPositionTranslate(){
     let translatePosition;
     translatePosition = d => {
       let x = this._calculateExitXPosition();
@@ -497,17 +512,17 @@ let BarConfigModel = Backbone.Model.extend({
       return "translate("+ x + ", " + y + ")";
     };
     return translatePosition;
-  },
+  }
 
-  calculateDelay: function(time){
+  calculateDelay(time){
     let delay;
 
     delay = (d, i) => i / this.data.length * time;
 
     return delay;
-  },
+  }
 
-  getMargin: function(){
+  getMargin(){
     let margin = this.get('margin');
     let top = margin.top === undefined ? '0px' : margin.top + "px";
     let right = margin.right === undefined ? '0px' : margin.right + "px";
@@ -517,5 +532,95 @@ let BarConfigModel = Backbone.Model.extend({
     return "margin: " + top + " " +  right + " " + bottom + " " + left;
 
   }
+  getColor(){
+    return this.get('y').color;
+  }
 
-});
+  getYLabel(){
+    return this.get('y').label;
+  }
+  getXLabel(){
+    return this.get('x').label;
+  }
+
+  calculateYLabelTranslate(){
+    let paddingLeft = this.get('padding').left;
+    let paddingRight = this.get('padding').right;
+    let height = this.get('height');
+    let quadrant = this.get('quadrant');
+    let width = this.get('width');
+    let placement = this.get('placement');
+    let angle;
+
+    if(placement === 'horizontal'){
+      if(quadrant === 1 ||  quadrant === 3){
+        angle = '-90';
+      }
+      else{
+        angle = '90'
+      }
+    }
+
+
+    if(placement === 'horizontal'){
+      if(quadrant === 1 || quadrant === 4){
+        return "translate(" + (width - 10) + ", "+ height/2+") rotate(" + angle + ")";
+      }
+      else{
+        return "translate(" + 10 + ", "+ height/2+") rotate(" + angle + ")";
+      }
+    }
+    else{
+      if(quadrant === 1 || quadrant === 4){
+        return "translate(" + paddingLeft/2 + ", "+ height/2+")";
+      }
+      else{
+        return "translate(" + (width - paddingRight/2) + ", "+ height/2+")";
+      }
+    }
+  }
+  calculateXLabelTranslate(){
+    let paddingBottom = this.get('padding').bottom;
+    let paddingRight = this.get('padding').right;
+    let paddingLeft = this.get('padding').left;
+    let paddingTop = this.get('padding').top;
+    let height = this.get('height');
+    let width = this.get('width');
+    let quadrant = this.get('quadrant');
+    let placement = this.get('placement');
+    let angle;
+
+
+    if(placement === 'horizontal'){
+      if(quadrant === 1 ||  quadrant === 3){
+        angle = '-90';
+      }
+      else{
+        angle = '90'
+      }
+    }
+
+    if(placement === 'horizontal'){
+      if(quadrant === 1 || quadrant === 2){
+        return "translate(" + ((width - paddingRight - paddingLeft)/2 + paddingLeft) + ", "+ (height - paddingBottom/2 + 20 )+") rotate(" + angle + ")";
+      }
+      else{
+        return "translate(" + ((width - paddingRight - paddingLeft)/2 + paddingLeft ) + ", " + (paddingTop/2 - 20) + ") rotate(" + angle + ")";
+      }
+    }
+    else{
+      if(quadrant === 1){
+        return "translate(" + ((width - paddingRight - paddingLeft)/2 + paddingLeft) + ", "+ (height - paddingBottom/2 + 20 )+")";
+      }
+      if(quadrant === 2){
+        return "translate(" + ((width - paddingRight - paddingLeft)/2 + paddingLeft) + ", "+ (height - paddingBottom/2 + 20 )+")";
+      }
+      if(quadrant === 3){
+        return "translate(" + ((width - paddingRight - paddingLeft)/2 + paddingLeft) + ", " + (paddingTop/2 - 5) + ")";
+      }
+      if(quadrant === 4){
+        return "translate(" + ((width - paddingRight - paddingLeft)/2 + paddingLeft) + ", "+ (paddingTop/2 - 5) + ")";
+      }
+    }
+  }
+}

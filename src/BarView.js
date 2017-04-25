@@ -20,7 +20,6 @@ let BarView = Backbone.View.extend({
     let id = this.model.get('id');
     let height = this.model.get('height');
     let width = this.model.get('width');
-    let color = this.model.get('color');
     let quadrant = this.model.get('quadrant');
     let placement = this.model.get('placement');
 
@@ -38,7 +37,7 @@ let BarView = Backbone.View.extend({
       svg = this._createContainer(container, placement, height, width);
     }
     else{
-      this._updateChart(svg, color);
+      this._updateChart(svg);
       return false;
     }
 
@@ -47,7 +46,10 @@ let BarView = Backbone.View.extend({
     this._appendXAxis(wrapper);
     this._appendYAxis(wrapper);
 
-    this._appendBar(wrapper, color);
+    this._appendBar(wrapper);
+
+    this._appendXLabel(wrapper);
+    this._appendYLabel(wrapper);
   },
 
   _createContainer: function(container, placement, height, width){
@@ -90,7 +92,6 @@ let BarView = Backbone.View.extend({
       .attr("transform", "rotate(" + this.model.getAxisTextAngle() + ")")
       .style("text-anchor", this.model.getXAxisTextAnchor());
   },
-
   _appendYAxis: function(wrapper){
     wrapper.append("g")
       .attr("class", "y axis")
@@ -102,7 +103,7 @@ let BarView = Backbone.View.extend({
       .attr("dy", this.model.getYAxisTextDy());
   },
 
-  _appendBar: function(wrapper, color){
+  _appendBar: function(wrapper){
     let {group, key} = this.model.getAccessor('y');
     let bar = wrapper.selectAll("g.bar")
       .data(this.data);
@@ -116,7 +117,7 @@ let BarView = Backbone.View.extend({
     g.append("rect")
       .attr("width", this.model.calculateBarWidth())
       .attr("height", this.model.calculateBarHeight())
-      .attr("fill", color);
+      .attr("fill", this.model.getColor());
 
     g.append("text")
       .text(d => d[group][key])
@@ -127,7 +128,7 @@ let BarView = Backbone.View.extend({
 
   },
 
-  _updateChart: function(svg, color){
+  _updateChart: function(svg){
     let wrapper = svg.select(".wrapper");
     if(!wrapper.empty()){
 
@@ -137,7 +138,7 @@ let BarView = Backbone.View.extend({
       this._updateXAxis(wrapper);
       this._updateYAxis(wrapper);
 
-      this._enterBar(bar, color);
+      this._enterBar(bar);
       this._updateBar(bar);
       this._exitBar(bar);
 
@@ -153,7 +154,6 @@ let BarView = Backbone.View.extend({
       .attr("transform", "rotate(" + this.model.getAxisTextAngle() + ")")
       .style("text-anchor", this.model.getXAxisTextAnchor());
   },
-
   _updateYAxis(wrapper){
     wrapper.select(".y.axis")
       .transition()
@@ -166,7 +166,7 @@ let BarView = Backbone.View.extend({
       .attr("dy", this.model.getYAxisTextDy());
   },
 
-  _enterBar(bar, color){
+  _enterBar(bar){
     let {group, key} = this.model.getAccessor('y');
     let g = bar.enter()
       .append("g")
@@ -176,7 +176,7 @@ let BarView = Backbone.View.extend({
     g.append("rect")
       .attr("width", this.model.calculateBarWidth())
       .attr("height", this.model.calculateBarHeight())
-      .attr("fill", color);
+      .attr("fill", this.model.getColor());
 
     g.append("text")
       .text(d => d[group][key])
@@ -191,7 +191,6 @@ let BarView = Backbone.View.extend({
       .attr("transform", this.model.calculateBarTransform());
 
   },
-
   _updateBar(bar){
     let {group, key} = this.model.getAccessor('y');
     bar.transition()
@@ -215,7 +214,6 @@ let BarView = Backbone.View.extend({
       .attr("x", this.model.calculateXTextPosition())
       .attr("transform", this.model.calculateTextRotate());
   },
-
   _exitBar(bar){
     bar.exit()
       .transition()
@@ -223,6 +221,21 @@ let BarView = Backbone.View.extend({
       .duration(1000)
       .attr("transform", this.model.getExitPositionTranslate())
       .remove();
+  },
+
+  _appendYLabel(wrapper){
+    wrapper.append("text")
+      .attr("text-anchor", "middle")
+      .attr("class", 'label')
+      .attr("transform", this.model.calculateYLabelTranslate())
+      .text(this.model.getYLabel());
+  },
+  _appendXLabel(wrapper){
+    wrapper.append("text")
+      .attr("text-anchor", "middle")
+      .attr("class", 'label')
+      .attr("transform", this.model.calculateXLabelTranslate())
+      .text(this.model.getXLabel());
   }
 
 });
