@@ -35,7 +35,7 @@ const config = {
   },
 
   //for vertical
-  /* padding:{
+   /*padding:{
     top: 20,
     right:40,
     bottom: 40,
@@ -65,7 +65,7 @@ const config = {
     label: 'Label Group.A',
 
     // color to plot bars with
-    color: 'steelblue',
+    //color: 'steelblue',
   }
 
 };
@@ -81,8 +81,8 @@ setTimeout(() => {
   chart.setData(data.slice(0, slice))
 }, 1000)
 
-/*
+
 setTimeout(() => {
   config.y.accessor = 'group.b';
   chart.setConfig(config)
-}, 2000);*/
+}, 2000);

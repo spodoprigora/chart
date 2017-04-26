@@ -150,6 +150,7 @@ let BarView = Backbone.View.extend({
       .transition()
       .duration(1000)
       .call(this.model.xAxisConfig())
+      .attr("transform", this.model.calculateXAxisPosition())
       .selectAll("text")
       .attr("transform", "rotate(" + this.model.getAxisTextAngle() + ")")
       .style("text-anchor", this.model.getXAxisTextAnchor());
@@ -159,7 +160,6 @@ let BarView = Backbone.View.extend({
       .transition()
       .duration(1000)
       .call(this.model.yAxisConfig())
-      .attr("transform", this.model.calculateYAxisPosition())
       .selectAll("text")
       .attr("transform", "rotate(" + this.model.getAxisTextAngle() + ")")
       .style("text-anchor", "middle")
@@ -217,7 +217,7 @@ let BarView = Backbone.View.extend({
   _exitBar(bar){
     bar.exit()
       .transition()
-      .delay( this.model.calculateDelay(500) )
+      .delay( this.model.calculateDelay(400) )
       .duration(1000)
       .attr("transform", this.model.getExitPositionTranslate())
       .remove();

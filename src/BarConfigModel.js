@@ -3,7 +3,7 @@ class BarConfigModel extends ContrailModel{
   get defaults(){ return {
     id: 'chart',
     height: 300,
-    width: 650,
+    width: 500,
     barPadding: 1,
     padding:{
       top: 20,
@@ -27,7 +27,6 @@ class BarConfigModel extends ContrailModel{
       label: 'Label Group.A',
       color: 'orange',
     },
-
     quadrant: 1,
     placement: 'vertical'
   }}
@@ -78,13 +77,11 @@ class BarConfigModel extends ContrailModel{
     let data = this.data;
     let scale = this.get('x').scale;
     let xScale = d3[scale]();
-
     let width = this.get('width');
     let paddingLeft = this.get('padding').left;
     let paddingRight = this.get('padding').right;
     let quadrant = this.get('quadrant');
     let placement = this.get('placement');
-
     let { group, key} = this.getAccessor('x');
 
     if( placement === 'horizontal' ){
@@ -95,12 +92,11 @@ class BarConfigModel extends ContrailModel{
     }
 
     if( quadrant === 1 || quadrant === 4 ){
-      xScale.range([paddingLeft, width - paddingRight]);
+      xScale.range([paddingLeft, width - paddingRight -(this.calculateBarWidth()/2)]);
     }
-    else{
-      xScale.range([width - paddingRight, paddingLeft]);
+    else {
+      xScale.range([width - paddingRight - (this.calculateBarWidth()/2), paddingLeft]);
     }
-
     return xScale;
   }
   yScaleConfig(){
@@ -108,13 +104,11 @@ class BarConfigModel extends ContrailModel{
     let { group, key } = this.getAccessor('y');
     let paddingTop = this.get('padding').top;
     let paddingBottom = this.get('padding').bottom;
-
-    let yScale = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d[group][key])]);
-
     let quadrant = this.get('quadrant');
     let height = this.get('height');
 
+    let yScale = d3.scaleLinear()
+      .domain([0, d3.max(data, d => d[group][key])]);
 
     if(quadrant === 1 || quadrant === 2){
       yScale.range([height - paddingBottom,  paddingTop]);
@@ -127,15 +121,14 @@ class BarConfigModel extends ContrailModel{
   }
   oldYScaleConfig(){
     let data = this.oldData;
-    let { group, key} = this.getAccessor('x');
-
-    let oldYScale = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d[group][key])]);
-
+    let { group, key} = this.getAccessor('y');
     let quadrant = this.get('quadrant');
     let height = this.get('height');
     let paddingTop = this.get('padding').top;
     let paddingBottom = this.get('padding').bottom;
+
+    let oldYScale = d3.scaleLinear()
+      .domain([0, d3.max(data, d => d[group][key])]);
 
     if(quadrant === 1 || quadrant === 2){
       oldYScale.range([height - paddingBottom,  paddingTop]);
@@ -190,7 +183,6 @@ class BarConfigModel extends ContrailModel{
 
   getAxisTextAngle(){
     let axisTextAngle;
-
     let quadrant = this.get('quadrant');
     let placement = this.get('placement');
 
@@ -210,7 +202,6 @@ class BarConfigModel extends ContrailModel{
   }
   getXAxisTextAnchor(){
     let xAxisTextAnchor;
-
     let quadrant = this.get('quadrant');
     let placement = this.get('placement');
 
@@ -230,7 +221,6 @@ class BarConfigModel extends ContrailModel{
   }
   getYAxisTextDy(){
     let yAxisTextDy;
-
     let quadrant = this.get('quadrant');
     let placement = this.get('placement');
 
@@ -250,25 +240,42 @@ class BarConfigModel extends ContrailModel{
   }
 
   calculateXAxisPosition(){
-    let xAxisPosition;
-
+    let xPosition;
+    let yPosition;
     let quadrant = this.get('quadrant');
     let height = this.get('height');
     let paddingBottom = this.get('padding').bottom;
     let paddingTop = this.get('padding').top;
+    let placement = this.get('placement');
 
     if(quadrant === 1 || quadrant === 2){
-      xAxisPosition = height - paddingBottom + 3;
+      yPosition = height - paddingBottom + 3;
+    }
+    else {
+      yPosition = paddingTop - 3;
+    }
+
+    if(placement === 'horizontal'){
+      if(quadrant === 1 || quadrant === 4){
+        xPosition =  0;
+      }
+      else{
+        xPosition = this.calculateBarWidth()/2;
+      }
     }
     else{
-      xAxisPosition = paddingTop - 3;
+      if(quadrant === 1 || quadrant === 4){
+        xPosition = this.calculateBarWidth()/2;
+      }
+      else{
+        xPosition = 0;
+      }
     }
 
-    return "translate(0," + xAxisPosition +")";
+    return "translate(" + xPosition +", " + yPosition +")";
   }
   calculateYAxisPosition(){
-    let yAxisPosition;
-
+    let xPosition;
     let quadrant = this.get('quadrant');
     let width = this.get('width');
     let paddingLeft = this.get('padding').left;
@@ -277,27 +284,26 @@ class BarConfigModel extends ContrailModel{
 
     if(placement === 'horizontal'){
       if(quadrant === 1 ||  quadrant === 4){
-        yAxisPosition = width - paddingRight + 3 + this.calculateBarWidth()/2;
+        xPosition = width - paddingRight + 3;
       }
       else{
-        yAxisPosition = paddingLeft - 3 - this.calculateBarWidth()/2;
+        xPosition = paddingLeft - 3 ;
       }
     }
     else{
       if(quadrant === 1 ||  quadrant === 4){
-        yAxisPosition = paddingLeft - 3  - this.calculateBarWidth()/2;
+        xPosition = paddingLeft - 3;
       }
       else{
-        yAxisPosition = width - paddingRight + 3 + this.calculateBarWidth()/2;
+        xPosition = width - paddingRight + 3;
       }
     }
 
-    return "translate("+ yAxisPosition +", 0)";
+    return "translate("+ xPosition +", 0)";
   }
 
   calculateBarWidth(){
     let data = this.data;
-
     let width = this.get('width');
     let paddingLeft = this.get('padding').left;
     let paddingRight = this.get('padding').right;
@@ -307,7 +313,6 @@ class BarConfigModel extends ContrailModel{
   }
   calculateBarHeight() {
     let barHeight;
-
     let quadrant = this.get('quadrant');
     let height = this.get('height');
     let paddingTop = this.get('padding').top;
@@ -328,12 +333,23 @@ class BarConfigModel extends ContrailModel{
     let quadrant = this.get('quadrant');
     let barWidth = this.calculateBarWidth();
     let { group, key} = this.getAccessor('x');
+    let placement = this.get('placement');
 
-    if(quadrant === 1 || quadrant === 4){
-      xPosition = d => this.xScaleConfig()(d[group][key]) - barWidth/2;
+    if(placement === 'horizontal'){
+      if(quadrant === 1 || quadrant === 4){
+        xPosition = d => this.xScaleConfig()(d[group][key]) - barWidth/2;
+      }
+      else{
+        xPosition = d => this.xScaleConfig()(d[group][key]);
+      }
     }
     else{
-      xPosition = d => this.xScaleConfig()(d[group][key]) - barWidth + barWidth/2;
+      if(quadrant === 1 || quadrant === 4){
+        xPosition = d => this.xScaleConfig()(d[group][key]);
+      }
+      else{
+        xPosition = d => this.xScaleConfig()(d[group][key])- barWidth/2;
+      }
     }
 
     return xPosition;
@@ -384,7 +400,6 @@ class BarConfigModel extends ContrailModel{
   }
   calculateTextRotate(){
     let textRotate;
-
     let placement = this.get('placement');
     let quadrant = this.get('quadrant');
     let barWidth = this.calculateBarWidth();
@@ -406,7 +421,6 @@ class BarConfigModel extends ContrailModel{
 
   _calculateEnterXPosition(){
     let xPosition;
-
     let placement = this.get('placement');
     let quadrant = this.get('quadrant');
     let paddingLeft = this.get('padding').left;
@@ -415,18 +429,18 @@ class BarConfigModel extends ContrailModel{
 
     if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 4){
-        xPosition = -paddingLeft;
+        xPosition = -this.calculateBarWidth() - 5;
       }
       else{
-        xPosition =  width + paddingRight;
+        xPosition =  width + this.calculateBarWidth();
       }
     }
     else{
       if(quadrant === 1 || quadrant === 4){
-        xPosition = width + paddingRight;
+        xPosition = width + this.calculateBarWidth();
       }
       else{
-        xPosition = -paddingLeft;
+        xPosition = -this.calculateBarWidth() - 5;
       }
     }
 
@@ -434,7 +448,6 @@ class BarConfigModel extends ContrailModel{
   }
   _calculateEnterYPosition(){
     let yPosition;
-
     let quadrant = this.get('quadrant');
     let paddingTop = this.get('padding').top;
     let { group, key} = this.getAccessor('y');
@@ -450,7 +463,6 @@ class BarConfigModel extends ContrailModel{
   }
   getEnterPositionTranslate(){
     let translatePosition;
-
     translatePosition = d => {
       let x = this._calculateEnterXPosition();
       let y = this._calculateEnterYPosition()(d);
@@ -462,27 +474,24 @@ class BarConfigModel extends ContrailModel{
 
   _calculateExitXPosition(){
     let xPosition;
-
     let placement = this.get('placement');
     let quadrant = this.get('quadrant');
-    let paddingLeft = this.get('padding').left;
-    let paddingRight = this.get('padding').right;
     let width = this.get('width');
 
     if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 4){
-        xPosition = -paddingLeft;
+        xPosition = -this.calculateBarWidth() - 5;
       }
       else{
-        xPosition =  width + paddingRight;
+        xPosition =  width + this.calculateBarWidth();
       }
     }
     else{
       if(quadrant === 1 || quadrant === 4){
-        xPosition = width + paddingRight;
+        xPosition = width + this.calculateBarWidth();
       }
       else{
-        xPosition = -paddingLeft;
+        xPosition = -this.calculateBarWidth() - 5;
       }
     }
 
@@ -490,7 +499,6 @@ class BarConfigModel extends ContrailModel{
   }
   _calculateExitYPosition(){
     let yPosition;
-
     let quadrant = this.get('quadrant');
     let paddingTop = this.get('padding').top;
     let { group, key} = this.getAccessor('y');
@@ -530,7 +538,6 @@ class BarConfigModel extends ContrailModel{
     let left = margin.left === undefined ? '0px' : margin.left + "px";
 
     return "margin: " + top + " " +  right + " " + bottom + " " + left;
-
   }
   getColor(){
     return this.get('y').color;
@@ -561,7 +568,6 @@ class BarConfigModel extends ContrailModel{
       }
     }
 
-
     if(placement === 'horizontal'){
       if(quadrant === 1 || quadrant === 4){
         return "translate(" + (width - 10) + ", "+ height/2+") rotate(" + angle + ")";
@@ -589,7 +595,6 @@ class BarConfigModel extends ContrailModel{
     let quadrant = this.get('quadrant');
     let placement = this.get('placement');
     let angle;
-
 
     if(placement === 'horizontal'){
       if(quadrant === 1 ||  quadrant === 3){
