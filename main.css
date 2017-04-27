@@ -1,17 +1,17 @@
 text{
     font-family: sans-serif;
     font-size: 11px;
-    fill: white;
+    fill: #fff;
     text-anchor: middle;
 }
 .block{
     float: left;
     margin: 10px;
-    border: 1px solid black;
+    border: 1px solid #000;
     padding: 10px
 }
 .tick text{
-    fill: black;
+    fill: #000;
 }
 .horizontal{
     height: 500px;
@@ -21,6 +21,9 @@ text{
     clear: both;
 }
 .label {
-    fill: black;
+    fill: #000000;
     font-size: 14px;
+}
+.y.axis text, .bar text, .label {
+    text-anchor: middle;
 }
