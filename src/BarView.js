@@ -45,20 +45,26 @@ const BarView = Backbone.View.extend({
     if (svg.empty()) {
       svg = this._createContainer(container, placement, height, width);
     } else {
-      this._updateChart(svg);
-      return false;
+      return this._updateChart(svg,id);
     }
 
     const wrapper = this._createWrapper(svg, placement, height, width, quadrant);
+    svg.on("click", this.clickHandler);
+
+    this._createClipPath(svg, id);
 
     this._appendXAxis(wrapper);
     this._appendYAxis(wrapper);
 
-    this._appendBar(wrapper);
+    this._appendBar(wrapper, id);
 
     this._appendXLabel(wrapper);
     this._appendYLabel(wrapper);
     return true;
+  },
+
+  clickHandler(){
+    command.execute('reset');
   },
 
   _createContainer (container, placement, height, width) {
@@ -90,6 +96,16 @@ const BarView = Backbone.View.extend({
     return wrapper;
   },
 
+  _createClipPath(svg, id){
+    svg.append("clipPath")
+      .attr("id", `clip-${id}`)
+      .append('rect')
+      .attr('x', this.model.xClip)
+      .attr('y', this.model.yClip)
+      .attr('height', this.model.calculateHeightClip())
+      .attr('width', this.model.calculateWidthClip());
+  },
+
   _appendXAxis (wrapper) {
     wrapper.append('g')
       .attr('class', 'x axis')
@@ -110,9 +126,13 @@ const BarView = Backbone.View.extend({
       .attr('dy', this.model.getYAxisTextDy());
   },
 
-  _appendBar (wrapper) {
-    const { group, key } = this.model.getAccessor('y');
-    const bar = wrapper.selectAll('g.bar')
+  _appendBar (wrapper,id) {
+    const accessor = this.model.get('y').accessor;
+    const clip = wrapper.append('g')
+      .attr('class', 'clip')
+      .attr('clip-path', `url("#clip-${id}")`);
+
+    const bar = clip.selectAll('g.bar')
       .data(this.data);
 
     // Enter
@@ -127,28 +147,35 @@ const BarView = Backbone.View.extend({
       .attr('fill', this.model.getColor());
 
     g.append('text')
-      .text(d => d[group][key])
+      .text(d => _.get(d, accessor))
       .attr('x', this.model.calculateXTextPosition())
       .attr('y', this.model.calculateYTextPosition())
       .attr('text-anchor', 'middle')
       .attr('transform', this.model.calculateTextRotate());
   },
 
-  _updateChart (svg) {
+  _updateChart (svg, id) {
     const wrapper = svg.select('.wrapper');
-    if (!wrapper.empty()) {
-      const bar = wrapper.selectAll('g.bar')
-        .data(this.data);
+    const clip = wrapper.select('.clip');
 
-      this._updateXAxis(wrapper);
-      this._updateYAxis(wrapper);
+    this._updateClipPath(svg, id);
 
-      this._enterBar(bar);
-      this._updateBar(bar);
-      this._exitBar(bar);
-    }
+    const bar = clip.selectAll('g.bar')
+      .data(this.data);
+
+    this._updateXAxis(wrapper);
+    this._updateYAxis(wrapper);
+
+    this._enterBar(bar);
+    this._updateBar(bar);
+    this._exitBar(bar);
+
   },
 
+  _updateClipPath(svg, id){
+     svg.select(`#clip-${id} rect`)
+       .attr('width', this.model.calculateWidthClip());
+  },
   _updateXAxis (wrapper) {
     wrapper.select('.x.axis')
       .transition()
@@ -170,7 +197,8 @@ const BarView = Backbone.View.extend({
   },
 
   _enterBar (bar) {
-    const { group, key } = this.model.getAccessor('y');
+    let accessor = this.model.get('y').accessor;
+
     const g = bar.enter()
       .append('g')
       .attr('class', 'bar')
@@ -182,9 +210,10 @@ const BarView = Backbone.View.extend({
       .attr('fill', this.model.getColor());
 
     g.append('text')
-      .text(d => d[group][key])
+      .text(d =>_.get(d, accessor))
       .attr('x', this.model.calculateXTextPosition())
       .attr('y', this.model.calculateYTextPosition())
+      .attr("text-anchor", "middle")
       .attr('transform', this.model.calculateTextRotate());
 
     g.transition()
@@ -193,7 +222,7 @@ const BarView = Backbone.View.extend({
       .attr('transform', this.model.calculateBarTransform());
   },
   _updateBar (bar) {
-    const { group, key } = this.model.getAccessor('y');
+    let accessor = this.model.get('y').accessor;
     bar.transition()
       .delay(this.model.calculateDelay(1000))
       .duration(1000)
@@ -210,7 +239,7 @@ const BarView = Backbone.View.extend({
       .transition()
       .delay(this.model.calculateDelay(1000))
       .duration(1000)
-      .text(d => d[group][key])
+      .text(d => _.get(d, accessor))
       .attr('y', this.model.calculateYTextPosition())
       .attr('x', this.model.calculateXTextPosition())
       .attr('transform', this.model.calculateTextRotate());
@@ -226,14 +255,28 @@ const BarView = Backbone.View.extend({
 
   _appendYLabel (wrapper) {
     wrapper.append('text')
+      .attr("text-anchor", "middle")
       .attr('class', 'label')
       .attr('transform', this.model.calculateYLabelTranslate())
       .text(this.model.getYLabel());
   },
   _appendXLabel (wrapper) {
     wrapper.append('text')
+      .attr("text-anchor", "middle")
       .attr('class', 'label')
       .attr('transform', this.model.calculateXLabelTranslate())
       .text(this.model.getXLabel());
   },
+
+  refresh(arg){
+    let placement = this.model.get('placement');
+    const quadrant = this.model.get('quadrant');
+    if(placement === 'horizontal'){
+        this.model.domain = arg.reverse();
+    }
+    else{
+      this.model.domain = arg
+    }
+    this.render();
+  }
 });

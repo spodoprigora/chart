@@ -40,6 +40,10 @@ class BarConfigModel extends ContrailModel {
 
   setData (data) {
     this.data = data;
+    this.xScale = null;
+    this.xAxis = null;
+    this.xScale = this.xScaleConfig();
+    this.xAxis = this.xAxisConfig();
   }
 
   setOldData (oldData) {
@@ -52,11 +56,11 @@ class BarConfigModel extends ContrailModel {
 
   prepareData (data) {
     const clearData = [];
-    const { group, key } = this.getAccessor('y');
+    let accessor = this.get('y').accessor;
 
     _.forEach(data, (v) => {
-      if (v[group][key] < 0 || v[group][key] === undefined) {
-        v[group][key] = 0;
+      if (_.get(v, accessor) < 0 || _.get(v, accessor) === undefined) {
+        _.set(v, accessor, 0);
         clearData.push(v);
       } else {
         clearData.push(v);
@@ -65,49 +69,52 @@ class BarConfigModel extends ContrailModel {
     return clearData;
   }
 
-  getAccessor (axis) {
-    const accessor = this.get(axis).accessor;
-    const args = accessor.split('.');
-    const group = args[0];
-    const key = args[1];
-
-    return { group, key };
-  }
-
   xScaleConfig () {
-    const data = this.data;
-    const scale = this.get('x').scale;
-    const xScale = d3[scale]();
-    const width = this.get('width');
-    const paddingLeft = this.get('padding').left;
-    const paddingRight = this.get('padding').right;
-    const quadrant = this.get('quadrant');
-    const placement = this.get('placement');
-    const { group, key } = this.getAccessor('x');
+    let placement = this.get('placement');
+    let domain = this.domain;
 
-    if (placement === 'horizontal') {
-      xScale.domain([d3.max(data, d => d[group][key]), d3.min(data, d => d[group][key])]);
-    } else {
-      xScale.domain([d3.min(data, d => d[group][key]), d3.max(data, d => d[group][key])]);
+    if(!this.xScale){
+      let data = this.data;
+      let scale = this.get('x').scale;
+      let xScale = d3[scale]();
+      let width = this.get('width');
+      let paddingLeft = this.get('padding').left;
+      let paddingRight = this.get('padding').right;
+      let quadrant = this.get('quadrant');
+      let accessor = this.get('x').accessor;
+
+      if( placement === 'horizontal' ){
+        xScale.domain([d3.max(data, d => _.get(d, accessor)), d3.min(data, d => _.get(d, accessor))]);
+      }
+      else{
+        xScale.domain([d3.min(data, d => _.get(d, accessor)), d3.max(data, d => _.get(d, accessor))]);
+      }
+
+
+      if( quadrant === 1 || quadrant === 4 ){
+        xScale.range([paddingLeft, width - paddingRight -(this.calculateBarWidth()/2)]);
+      }
+      else {
+        xScale.range([width - paddingRight - (this.calculateBarWidth()/2), paddingLeft]);
+      }
+      return xScale;
     }
 
-    if (quadrant === 1 || quadrant === 4) {
-      xScale.range([paddingLeft, width - paddingRight - (this.calculateBarWidth() / 2)]);
-    } else {
-      xScale.range([width - paddingRight - (this.calculateBarWidth() / 2), paddingLeft]);
+    if(domain){
+      this.xScale.domain(domain);
     }
-    return xScale;
+    return this.xScale;
   }
   yScaleConfig () {
     const data = this.data;
-    const { group, key } = this.getAccessor('y');
+    let accessor = this.get('y').accessor;
     const paddingTop = this.get('padding').top;
     const paddingBottom = this.get('padding').bottom;
     const quadrant = this.get('quadrant');
     const height = this.get('height');
 
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d[group][key])]);
+      .domain([0, d3.max(data, d => _.get(d, accessor))]);
 
     if (quadrant === 1 || quadrant === 2) {
       yScale.range([height - paddingBottom, paddingTop]);
@@ -118,14 +125,14 @@ class BarConfigModel extends ContrailModel {
   }
   oldYScaleConfig () {
     const data = this.oldData;
-    const { group, key } = this.getAccessor('y');
+    let accessor = this.get('y').accessor;
     const quadrant = this.get('quadrant');
     const height = this.get('height');
     const paddingTop = this.get('padding').top;
     const paddingBottom = this.get('padding').bottom;
 
     const oldYScale = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d[group][key])]);
+      .domain([0, d3.max(data, d => _.get(d, accessor))]);
 
     if (quadrant === 1 || quadrant === 2) {
       oldYScale.range([height - paddingBottom, paddingTop]);
@@ -138,6 +145,9 @@ class BarConfigModel extends ContrailModel {
 
   xAxisConfig () {
     let xAxis;
+
+    if(this.xAxis) return this.xAxis;
+
     const quadrant = this.get('quadrant');
 
     if (quadrant === 1 || quadrant === 2) {
@@ -291,12 +301,12 @@ class BarConfigModel extends ContrailModel {
     const height = this.get('height');
     const paddingTop = this.get('padding').top;
     const paddingBottom = this.get('padding').bottom;
-    const { group, key } = this.getAccessor('y');
+    let accessor = this.get('y').accessor;
 
     if (quadrant === 1 || quadrant === 2) {
-      barHeight = d => height - paddingBottom - this.yScaleConfig()(d[group][key]);
+      barHeight = d => height - paddingBottom - this.yScaleConfig()(_.get(d, accessor));
     } else {
-      barHeight = d => this.yScaleConfig()(d[group][key]) - paddingTop;
+      barHeight = d => this.yScaleConfig()(_.get(d, accessor)) - paddingTop;
     }
 
     return barHeight;
@@ -306,19 +316,19 @@ class BarConfigModel extends ContrailModel {
     let xPosition;
     const quadrant = this.get('quadrant');
     const barWidth = this.calculateBarWidth();
-    const { group, key } = this.getAccessor('x');
+    let accessor = this.get('x').accessor;
     const placement = this.get('placement');
 
     if (placement === 'horizontal') {
       if (quadrant === 1 || quadrant === 4) {
-        xPosition = d => this.xScaleConfig()(d[group][key]) - (barWidth / 2);
+        xPosition = d => this.xScaleConfig()(_.get(d, accessor)) - (barWidth / 2);
       } else {
-        xPosition = d => this.xScaleConfig()(d[group][key]);
+        xPosition = d => this.xScaleConfig()(_.get(d, accessor));
       }
     } else if (quadrant === 1 || quadrant === 4) {
-      xPosition = d => this.xScaleConfig()(d[group][key]);
+      xPosition = d => this.xScaleConfig()(_.get(d, accessor));
     } else {
-      xPosition = d => this.xScaleConfig()(d[group][key]) - (barWidth / 2);
+      xPosition = d => this.xScaleConfig()(_.get(d, accessor)) - (barWidth / 2);
     }
 
     return xPosition;
@@ -327,10 +337,10 @@ class BarConfigModel extends ContrailModel {
     let yPosition;
     const quadrant = this.get('quadrant');
     const paddingTop = this.get('padding').top;
-    const { group, key } = this.getAccessor('y');
+    let accessor = this.get('y').accessor;
 
     if (quadrant === 1 || quadrant === 2) {
-      yPosition = d => this.yScaleConfig()(d[group][key]);
+      yPosition = d => this.yScaleConfig()(_.get(d, accessor));
     } else {
       yPosition = () => paddingTop;
     }
@@ -352,12 +362,12 @@ class BarConfigModel extends ContrailModel {
     let yTextPosition;
     const quadrant = this.get('quadrant');
     const paddingTop = this.get('padding').top;
-    const { group, key } = this.getAccessor('y');
+    let accessor = this.get('y').accessor;
 
     if (quadrant === 1 || quadrant === 2) {
       yTextPosition = () => 13;
     } else {
-      yTextPosition = d => this.yScaleConfig()(d[group][key]) - paddingTop - 13;
+      yTextPosition = d => this.yScaleConfig()(_.get(d, accessor)) - paddingTop - 13;
     }
 
     return yTextPosition;
@@ -405,10 +415,10 @@ class BarConfigModel extends ContrailModel {
     let yPosition;
     const quadrant = this.get('quadrant');
     const paddingTop = this.get('padding').top;
-    const { group, key } = this.getAccessor('y');
+    let accessor = this.get('y').accessor;
 
     if (quadrant === 1 || quadrant === 2) {
-      yPosition = d => this.yScaleConfig()(d[group][key]);
+      yPosition = d => this.yScaleConfig()(_.get(d, accessor));
     } else {
       yPosition = () => paddingTop;
     }
@@ -447,10 +457,10 @@ class BarConfigModel extends ContrailModel {
     let yPosition;
     const quadrant = this.get('quadrant');
     const paddingTop = this.get('padding').top;
-    const { group, key } = this.getAccessor('y');
+    let accessor = this.get('y').accessor;
 
     if (quadrant === 1 || quadrant === 2) {
-      yPosition = d => this.oldYScaleConfig()(d[group][key]);
+      yPosition = d => this.oldYScaleConfig()(_.get(d, accessor));
     } else {
       yPosition = () => paddingTop;
     }
@@ -545,5 +555,47 @@ class BarConfigModel extends ContrailModel {
       return `translate(${((width - paddingRight - paddingLeft) / 2) + paddingLeft}, ${(height - (paddingBottom / 2)) + 20})`;
     }
     return `translate(${((width - paddingRight - paddingLeft) / 2) + paddingLeft}, ${(paddingTop / 2) - 5})`;
+  }
+
+  get xClip(){
+    const quadrant = this.get('quadrant');
+    let placement = this.get('placement');
+    const paddingLeft = this.get('padding').left;
+    const paddingRight = this.get('padding').right;
+
+    if(placement === 'horizontal'){
+      if(quadrant === 1 || quadrant === 4){
+        return paddingLeft - (this.calculateBarWidth() / 2);
+      }
+      else{
+        return paddingLeft ;
+      }
+    }
+    else{
+      if(quadrant === 1 || quadrant === 4){
+        return paddingLeft;
+      }
+      else{
+        return paddingLeft - (this.calculateBarWidth() / 2);
+      }
+    }
+
+  }
+  get yClip(){
+    return this.get('padding').top;
+  }
+  calculateHeightClip(){
+    const height = this.get('height');
+    const paddingTop = this.get('padding').top;
+    const paddingBottom = this.get('padding').bottom;
+
+    return height - paddingBottom - paddingTop;
+  }
+  calculateWidthClip(){
+    const width = this.get('width');
+    const paddingLeft = this.get('padding').left;
+    const paddingRight = this.get('padding').right;
+
+    return width - paddingLeft - paddingRight + (this.calculateBarWidth() / 2);
   }
 }

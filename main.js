@@ -1,15 +1,39 @@
-// time series data sample
+/*// time series data sample
 const length = 20;
 const data = [];
 _.each(d3.range(length), (i) => {
   data.push({
     group: {
       x: 1475760930000 + (1000000 * i),
-      a: i,
+      a: ++i,
       b: _.random(0, length),
     },
   })
-});
+});*/
+
+const maxValue = 30;
+const count = { 'countMin': 3, 'countMax': 200 };
+
+function getData (maxVal, range) {
+  let length =_.random(range.countMin, range.countMax);
+  const data = [];
+
+  _.each(d3.range(length), i => {
+    data.push({
+      group: {
+        x: 1475760930000 + 1000000 * i,
+        a: ++i,
+        b: _.random(0, maxVal),
+      }
+    });
+  });
+
+
+  return data;
+}
+const data = getData(maxValue, count);
+
+let command  = new Command();
 
 const config = {
 
@@ -25,7 +49,7 @@ const config = {
   },
 
   // quadrant
-  quadrant: 1,
+  quadrant: 4,
 
   // for horizontal
   padding: {
@@ -68,17 +92,44 @@ const config = {
   },
 };
 
-
 const configModel = new BarConfigModel(config);
 const chart = new BarView({ model: configModel });
 
 chart.setData(data);
 
-setTimeout(() => {
-  const slice = _.random(3, length);
-  chart.setData(data.slice(0, slice));
-}, 1000);
+const configNavigator = {
 
+  //placement vertical or horizontal; default value  'vertical'
+  //placement: 'horizontal',
+
+  // x axis settings
+  x: {
+    // how to access values from the serie to plot x
+    accessor: 'group.x',
+    //scale: 'scaleLinear',
+  },
+};
+
+const configNavigatorModel = new NavigationConfigModel(configNavigator);
+const navigator = new NavigationView({model: configNavigatorModel});
+navigator.setData(data);
+
+command.subscribe('refresh', chart);
+//command.subscribe('reset', navigator);
+
+
+/*
+setInterval(() => {
+  let data = getData(maxValue, count);
+  chart.setData(data);
+  navigator.setData(data);
+  //const slice = _.random(3, length);
+  //chart.setData(data.slice(0, slice));
+
+}, 2000);
+*/
+
+/*
 setTimeout(() => {
   config.y.accessor = 'group.b';
   config.quadrant = 4;
@@ -90,4 +141,4 @@ setTimeout(() => {
     left: 140,
   };
   chart.setConfig(config);
-}, 2000);
+}, 2000);*/
