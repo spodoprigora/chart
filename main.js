@@ -12,7 +12,7 @@ _.each(d3.range(length), (i) => {
 });*/
 
 const maxValue = 30;
-const count = { 'countMin': 3, 'countMax': 200 };
+const count = { 'countMin': 3, 'countMax': 20 };
 
 function getData (maxVal, range) {
   let length =_.random(range.countMin, range.countMax);
@@ -54,8 +54,8 @@ const config = {
   // for horizontal
   padding: {
     right: 70,
-    top: 20,
-    bottom: 80,
+    top: 80,
+    bottom: 20,
     left: 50,
   },
 

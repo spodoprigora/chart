@@ -104,6 +104,7 @@ describe("BarConfigModel", function() {
   beforeEach(function() {
     configModel = new BarConfigModel(config);
     configModel.setData(data);
+    configModel.setOldData(data);
   });
 
   afterEach(function() {
@@ -225,11 +226,23 @@ describe("BarConfigModel", function() {
   });
 
   it("Created xScale mast be single", function(){
-     expect(configModel.xScaleConfig()).toEqual(configModel.xScale)
+     expect(configModel.xScaleConfig()).toEqual(configModel.xScaleConfig())
+  });
+
+  it("Created yScale mast be single", function(){
+    expect(configModel.yScaleConfig()).toEqual(configModel.yScaleConfig())
+  });
+
+  it("Created oldYScale mast be single", function(){
+    expect(configModel.oldYScaleConfig()).toEqual(configModel.oldYScaleConfig())
   });
 
   it("Created xAxis mast be single", function(){
-     expect(configModel.xAxisConfig()).toEqual(configModel.xAxis)
+     expect(configModel.xAxisConfig()).toEqual(configModel.xAxisConfig())
+  });
+
+  it("Created yAxis mast be single", function(){
+    expect(configModel.yAxisConfig()).toEqual(configModel.yAxisConfig())
   });
 
   //width = 500, paddingLeft = 10, paddingRight = 10, barPadding = 1

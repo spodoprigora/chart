@@ -41,13 +41,19 @@ class BarConfigModel extends ContrailModel {
   setData (data) {
     this.data = data;
     this.xScale = null;
+    this.yScale = null;
     this.xAxis = null;
+    this.yAxis = null;
     this.xScale = this.xScaleConfig();
+    this.yScale = this.yScaleConfig();
     this.xAxis = this.xAxisConfig();
+    this.yAxis = this.yAxisConfig();
   }
 
   setOldData (oldData) {
     this.oldData = oldData;
+    this.oldYScale = null;
+    this.oldYScale = this.oldYScaleConfig();
   }
 
   setConfig (config) {
@@ -106,6 +112,7 @@ class BarConfigModel extends ContrailModel {
     return this.xScale;
   }
   yScaleConfig () {
+    if(this.yScale) return this.yScale;
     const data = this.data;
     let accessor = this.get('y').accessor;
     const paddingTop = this.get('padding').top;
@@ -124,6 +131,7 @@ class BarConfigModel extends ContrailModel {
     return yScale;
   }
   oldYScaleConfig () {
+    if(this.oldYScale) return this.oldYScale;
     const data = this.oldData;
     let accessor = this.get('y').accessor;
     const quadrant = this.get('quadrant');
@@ -162,6 +170,9 @@ class BarConfigModel extends ContrailModel {
   }
   yAxisConfig () {
     let yAxis;
+
+    if(this.yAxis) return this.yAxis;
+
     const quadrant = this.get('quadrant');
     const placement = this.get('placement');
 
@@ -526,7 +537,6 @@ class BarConfigModel extends ContrailModel {
     }
     return `translate(${(width - (paddingRight / 2))}, ${height / 2})`;
   }
-
   calculateXLabelTranslate () {
     const paddingBottom = this.get('padding').bottom;
     const paddingRight = this.get('padding').right;
